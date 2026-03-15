@@ -1,0 +1,22 @@
+{
+  "name": "Dapp surepay",
+  "build": {
+    "dockerfile": "./Dockerfile",
+    "context": "."
+  },
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"        
+      },
+      "extensions": [
+        "juanblanco.solidity",
+        "dbaeumer.vscode-eslint",
+        "dsznajder.es7-react-js-snippets"
+      ]
+    }
+  },
+  "workspaceFolder": "/workspaces/surepay",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/surepay,type=bind"
+  // "postCreateCommand": "npm install"
+}
