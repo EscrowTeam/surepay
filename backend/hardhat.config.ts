@@ -7,10 +7,15 @@ export default defineConfig({
     profiles: {
       default: {
         version: "0.8.28",
+        settings: {
+          viaIR: true,
+          optimizer: { enabled: true, runs: 200 },
+        },
       },
       production: {
         version: "0.8.28",
         settings: {
+          viaIR: true,
           optimizer: {
             enabled: true,
             runs: 200,
@@ -33,6 +38,13 @@ export default defineConfig({
       chainType: "l1",
       url: configVariable("SEPOLIA_RPC_URL"),
       accounts: [configVariable("SEPOLIA_PRIVATE_KEY")],
+    },
+    // Arbitrum Sepolia — target network for the soutenance deployment
+    arbitrumSepolia: {
+      type: "http",
+      chainType: "l1",
+      url: configVariable("ARBITRUM_SEPOLIA_RPC_URL"),
+      accounts: [configVariable("ARBITRUM_SEPOLIA_PRIVATE_KEY")],
     },
   },
 });

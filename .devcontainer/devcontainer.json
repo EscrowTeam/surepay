@@ -12,11 +12,13 @@
       "extensions": [
         "juanblanco.solidity",
         "dbaeumer.vscode-eslint",
-        "dsznajder.es7-react-js-snippets"
+        "dsznajder.es7-react-js-snippets",
+	      "anthropic.claude-code"
       ]
     }
   },
   "workspaceFolder": "/workspaces/surepay",
-  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/surepay,type=bind"
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/surepay,type=bind",  
   // "postCreateCommand": "npm install"
+  "postCreateCommand": "curl -fsSL https://claude.ai/install.sh | bash"
 }
