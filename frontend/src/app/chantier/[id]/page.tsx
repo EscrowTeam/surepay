@@ -1,0 +1,538 @@
+'use client'
+
+import { use, useState } from 'react'
+import { useAccount } from 'wagmi'
+import { useRouter } from 'next/navigation'
+import {
+  Loader2, CheckCircle2, AlertTriangle, ShieldOff, RotateCcw,
+  XCircle, Zap, Clock, Info
+} from 'lucide-react'
+import { useChantier } from '@/hooks/useChantier'
+import { useJalonActions } from '@/hooks/useJalonActions'
+import { useAcceptDevis } from '@/hooks/useAcceptDevis'
+import { TrustScoreBadge } from '@/components/chantier/TrustScoreBadge'
+import { ChantierStatusBadge, JalonStatusLabel } from '@/components/chantier/StatusBadge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { ChantierStatus, JalonStatus } from '@/types/contracts'
+import { formatUsdc, shortAddress, hashProof, timeUntilAutoValidation } from '@/lib/utils'
+
+interface Props {
+  params: Promise<{ id: string }>
+}
+
+export default function ChantierDetailPage({ params }: Props) {
+  const { id } = use(params)
+  const chantierId = BigInt(id)
+  const { address } = useAccount()
+  const router = useRouter()
+  const { chantier, jalons, isLoading, refetch } = useChantier(chantierId)
+  const jalonActions = useJalonActions(refetch)
+
+  // Formulaire proof hash
+  const [proofInput, setProofInput] = useState('')
+  const [clientProofInput, setClientProofInput] = useState('')
+  // Litige resolve form (arbitre)
+  const [artisanEnTort, setArtisanEnTort] = useState(true)
+  const [blockedBps, setBlockedBps] = useState('500')
+  const [penaltyBps, setPenaltyBps] = useState('200')
+
+  const depositAmount = chantier ? (chantier.devisAmount * 11n) / 10n : 0n
+  const acceptDevis = useAcceptDevis(chantierId, depositAmount, address)
+
+  if (isLoading || !chantier) {
+    return (
+      <div className="container max-w-3xl mx-auto px-4 py-16 flex items-center justify-center gap-2 text-muted-foreground">
+        <Loader2 className="size-5 animate-spin" />
+        Chargement du chantier...
+      </div>
+    )
+  }
+
+  const role =
+    address?.toLowerCase() === chantier.artisan.toLowerCase()
+      ? 'artisan'
+      : address?.toLowerCase() === chantier.particulier.toLowerCase()
+      ? 'particulier'
+      : 'viewer'
+
+  // Vérifier si l'adresse est l'arbitre (lecture directe du contrat non implémentée ici —
+  // l'arbitre verra les boutons si son adresse ne matche aucune partie)
+  const currentJalon = jalons[chantier.currentJalonIndex]
+  const autoVal = currentJalon?.status === JalonStatus.Finished
+    ? timeUntilAutoValidation(currentJalon.finishedAt)
+    : null
+
+  async function handleValidateJalon() {
+    const input = proofInput.trim()
+    const proof = input.startsWith('0x') && input.length === 66
+      ? (input as `0x${string}`)
+      : await hashProof(input || `proof-${chantierId}-${chantier!.currentJalonIndex}-${Date.now()}`)
+    jalonActions.validateJalon(chantierId, proof)
+    setProofInput('')
+  }
+
+  async function handleMinorReserves() {
+    const input = clientProofInput.trim()
+    const proof = input.startsWith('0x') && input.length === 66
+      ? (input as `0x${string}`)
+      : await hashProof(input || `client-proof-${Date.now()}`)
+    jalonActions.acceptJalonWithMinorReserves(chantierId, proof)
+    setClientProofInput('')
+  }
+
+  async function handleMajorReserves() {
+    const input = clientProofInput.trim()
+    const proof = input.startsWith('0x') && input.length === 66
+      ? (input as `0x${string}`)
+      : await hashProof(input || `client-proof-major-${Date.now()}`)
+    jalonActions.acceptJalonWithMajorReserves(chantierId, proof)
+    setClientProofInput('')
+  }
+
+  const isPending = jalonActions.isPending || acceptDevis.isPending
+
+  return (
+    <div className="container max-w-3xl mx-auto px-4 py-8 space-y-6">
+      {/* En-tête chantier */}
+      <div className="rounded-xl border border-border/50 bg-card p-6 space-y-4">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-xl font-bold">{jalons[0]?.description ?? `Chantier #${id}`}</h1>
+              <ChantierStatusBadge status={chantier.status} />
+            </div>
+            <p className="text-xs text-muted-foreground">ID #{id}</p>
+          </div>
+          <div className="text-right">
+            <div className="text-2xl font-bold text-[oklch(0.82_0.15_175)]">
+              {formatUsdc(chantier.devisAmount)}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Dépôt : {formatUsdc(chantier.depositAmount)}
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <div>
+            <div className="text-xs text-muted-foreground">Artisan</div>
+            <div className="font-mono">{shortAddress(chantier.artisan)}</div>
+            {role === 'artisan' && (
+              <TrustScoreBadge artisanAddress={chantier.artisan} compact />
+            )}
+          </div>
+          <div>
+            <div className="text-xs text-muted-foreground">Particulier</div>
+            <div className="font-mono">{shortAddress(chantier.particulier)}</div>
+          </div>
+          <div>
+            <div className="text-xs text-muted-foreground">Yield DeFi (Aave)</div>
+            <div>{chantier.yieldOptIn ? '✅ Activé' : '—'}</div>
+          </div>
+          <div>
+            <div className="text-xs text-muted-foreground">Jalon en cours</div>
+            <div>{chantier.currentJalonIndex + 1} / {chantier.jalonCount}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Timeline des jalons */}
+      <div className="rounded-xl border border-border/50 bg-card p-6 space-y-1">
+        <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Jalons</h2>
+        {jalons.map((jalon, idx) => {
+          const isCurrent = idx === chantier.currentJalonIndex
+          const isDone = jalon.status === JalonStatus.Accepted || jalon.status === JalonStatus.ReservesLifted
+
+          return (
+            <div
+              key={idx}
+              className={`rounded-lg px-4 py-3 border transition-colors ${
+                isCurrent && chantier.status === ChantierStatus.Active
+                  ? 'border-[oklch(0.82_0.15_175)]/30 bg-[oklch(0.82_0.15_175)]/5'
+                  : 'border-transparent'
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-3">
+                  <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold flex-shrink-0 ${
+                    isDone ? 'bg-emerald-500/20 text-emerald-400' : isCurrent ? 'bg-[oklch(0.82_0.15_175)]/20 text-[oklch(0.82_0.15_175)]' : 'bg-white/5 text-muted-foreground'
+                  }`}>
+                    {idx + 1}
+                  </span>
+                  <div>
+                    <div className="text-sm font-medium">{jalon.description}</div>
+                    <div className="text-xs text-muted-foreground">{formatUsdc(jalon.amount)}</div>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end gap-1">
+                  <JalonStatusLabel status={jalon.status} />
+                  {jalon.status === JalonStatus.Finished && autoVal && isCurrent && (
+                    <span className={`text-xs ${autoVal.expired ? 'text-emerald-400' : 'text-blue-400'}`}>
+                      {autoVal.label}
+                    </span>
+                  )}
+                  {jalon.blockedAmount > 0n && (
+                    <span className="text-xs text-amber-400">
+                      {formatUsdc(jalon.blockedAmount)} bloqué
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Zone d'actions — dépend du rôle et statut */}
+      <div className="space-y-4">
+
+        {/* ── PARTICULIER : accepter/refuser le devis ── */}
+        {role === 'particulier' && chantier.status === ChantierStatus.DevisSubmitted && (
+          <ActionCard title="Devis en attente de signature" icon={<Info className="size-5 text-blue-400" />}>
+            <p className="text-sm text-muted-foreground mb-4">
+              L'artisan a soumis ce devis. Vous devez d'abord approuver {formatUsdc(depositAmount)} USDC (110% du devis),
+              puis signer le contrat.
+            </p>
+            <div className="flex items-center gap-1 mb-4">
+              <input
+                id="yieldOptIn"
+                type="checkbox"
+                className="rounded"
+                onChange={e => {/* géré au clic accept */}}
+              />
+              <label htmlFor="yieldOptIn" className="text-sm ml-2 cursor-pointer">
+                Activer le yield DeFi (Aave V3) — les fonds génèrent des intérêts pendant le chantier
+              </label>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {!acceptDevis.isAlreadyApproved ? (
+                <Button
+                  onClick={acceptDevis.approve}
+                  disabled={isPending}
+                  className="bg-[oklch(0.82_0.15_175)] text-black hover:bg-[oklch(0.75_0.15_175)] gap-2"
+                >
+                  {isPending && <Loader2 className="size-4 animate-spin" />}
+                  1. Approuver {formatUsdc(depositAmount)} USDC
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => acceptDevis.accept(false)}
+                  disabled={isPending}
+                  className="bg-[oklch(0.82_0.15_175)] text-black hover:bg-[oklch(0.75_0.15_175)] gap-2"
+                >
+                  {isPending && <Loader2 className="size-4 animate-spin" />}
+                  2. Signer et déposer
+                </Button>
+              )}
+              <Button
+                variant="destructive"
+                onClick={() => jalonActions.rejectDevis(chantierId)}
+                disabled={isPending}
+              >
+                Refuser le devis
+              </Button>
+            </div>
+            {acceptDevis.isAlreadyApproved && (
+              <p className="text-xs text-emerald-400 mt-2">✓ USDC approuvé — vous pouvez signer le contrat</p>
+            )}
+          </ActionCard>
+        )}
+
+        {/* ── ARTISAN : valider un jalon ── */}
+        {role === 'artisan' &&
+          chantier.status === ChantierStatus.Active &&
+          currentJalon?.status === JalonStatus.Pending && (
+          <ActionCard title="Valider ce jalon" icon={<CheckCircle2 className="size-5 text-[oklch(0.82_0.15_175)]" />}>
+            <p className="text-sm text-muted-foreground mb-3">
+              Déclarez le jalon {chantier.currentJalonIndex + 1} terminé et soumettez votre preuve.
+              Le particulier dispose de 48h pour valider ou lever des réserves.
+            </p>
+            <div className="space-y-2 mb-4">
+              <Label className="text-xs">Preuve (description, URL, CID IPFS ou hash 0x...)</Label>
+              <Input
+                placeholder="Description de la preuve ou hash 0x..."
+                value={proofInput}
+                onChange={e => setProofInput(e.target.value)}
+                className="text-sm font-mono"
+              />
+              <p className="text-xs text-muted-foreground">Laissez vide pour générer un hash automatique.</p>
+            </div>
+            <Button
+              onClick={handleValidateJalon}
+              disabled={isPending}
+              className="bg-[oklch(0.82_0.15_175)] text-black hover:bg-[oklch(0.75_0.15_175)] gap-2"
+            >
+              {isPending && <Loader2 className="size-4 animate-spin" />}
+              Soumettre la preuve
+            </Button>
+          </ActionCard>
+        )}
+
+        {/* ── PARTICULIER : actions sur jalon Finished ── */}
+        {role === 'particulier' &&
+          chantier.status === ChantierStatus.Active &&
+          currentJalon?.status === JalonStatus.Finished && (
+          <ActionCard title="Valider ou contester le jalon" icon={<CheckCircle2 className="size-5 text-[oklch(0.82_0.15_175)]" />}>
+            {autoVal && (
+              <p className={`text-sm mb-3 ${autoVal.expired ? 'text-emerald-400' : 'text-blue-400'}`}>
+                <Clock className="size-3.5 inline mr-1" />
+                {autoVal.expired
+                  ? 'Le délai de 48h est expiré — auto-validation possible'
+                  : `Auto-validation dans ${autoVal.label}`}
+              </p>
+            )}
+            <div className="space-y-2 mb-4">
+              <Label className="text-xs">Votre preuve de non-conformité (si réserves)</Label>
+              <Input
+                placeholder="Description, URL photo, CID IPFS..."
+                value={clientProofInput}
+                onChange={e => setClientProofInput(e.target.value)}
+                className="text-sm"
+              />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                onClick={() => jalonActions.acceptJalon(chantierId)}
+                disabled={isPending}
+                className="bg-[oklch(0.82_0.15_175)] text-black hover:bg-[oklch(0.75_0.15_175)] gap-2"
+              >
+                {isPending && <Loader2 className="size-4 animate-spin" />}
+                ✓ Valider (libère 98%)
+              </Button>
+              <Button variant="outline" onClick={handleMinorReserves} disabled={isPending}>
+                Réserves mineures (−10%)
+              </Button>
+              <Button variant="destructive" onClick={handleMajorReserves} disabled={isPending}>
+                <AlertTriangle className="size-4 mr-1" />
+                Réserves majeures (pause)
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Réserves mineures : 10% bloqué + 3% pénalité, chantier continue.
+              Réserves majeures : chantier suspendu jusqu'à résolution.
+            </p>
+          </ActionCard>
+        )}
+
+        {/* ── Auto-validation disponible (n'importe qui) ── */}
+        {chantier.status === ChantierStatus.Active &&
+          currentJalon?.status === JalonStatus.Finished &&
+          autoVal?.expired && (
+          <ActionCard title="Auto-validation disponible" icon={<Clock className="size-5 text-emerald-400" />}>
+            <p className="text-sm text-muted-foreground mb-3">
+              48h se sont écoulées sans réaction du particulier. N'importe qui peut déclencher la validation automatique.
+            </p>
+            <Button
+              onClick={() => jalonActions.triggerAutoValidation(chantierId)}
+              disabled={isPending}
+              variant="outline"
+              className="gap-2"
+            >
+              {isPending && <Loader2 className="size-4 animate-spin" />}
+              Déclencher l'auto-validation
+            </Button>
+          </ActionCard>
+        )}
+
+        {/* ── ARTISAN : répondre aux réserves mineures ── */}
+        {role === 'artisan' &&
+          chantier.status === ChantierStatus.Active &&
+          currentJalon?.status === JalonStatus.AcceptedWithReserves && (
+          <ActionCard title="Réserves mineures — votre réponse" icon={<AlertTriangle className="size-5 text-amber-400" />}>
+            <p className="text-sm text-muted-foreground mb-2">
+              Le particulier a posé des réserves mineures. Si vous acceptez :
+            </p>
+            <ul className="text-sm text-muted-foreground mb-4 space-y-1">
+              <li>• Vous recevez immédiatement {formatUsdc(currentJalon.amount - currentJalon.blockedAmount - currentJalon.penaltyAmount)} (87%)</li>
+              <li>• {formatUsdc(currentJalon.blockedAmount)} resteront bloqués jusqu'à levée des réserves</li>
+              <li>• {formatUsdc(currentJalon.penaltyAmount)} de pénalité conservés par la plateforme</li>
+            </ul>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => jalonActions.acknowledgeReserves(chantierId, true)}
+                disabled={isPending}
+                className="bg-[oklch(0.82_0.15_175)] text-black hover:bg-[oklch(0.75_0.15_175)] gap-2"
+              >
+                {isPending && <Loader2 className="size-4 animate-spin" />}
+                Accepter les déductions
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => jalonActions.acknowledgeReserves(chantierId, false)}
+                disabled={isPending}
+              >
+                <ShieldOff className="size-4 mr-1" />
+                Contester → Litige
+              </Button>
+            </div>
+          </ActionCard>
+        )}
+
+        {/* ── PARTICULIER : lever les réserves ── */}
+        {role === 'particulier' &&
+          chantier.status === ChantierStatus.Active &&
+          currentJalon?.status === JalonStatus.PaidWithReserves && (
+          <ActionCard title="Lever les réserves" icon={<CheckCircle2 className="size-5 text-emerald-400" />}>
+            <p className="text-sm text-muted-foreground mb-4">
+              L'artisan a corrigé les points soulevés. En levant les réserves, vous libérez les {formatUsdc(currentJalon.blockedAmount)} bloqués.
+            </p>
+            <Button
+              onClick={() => jalonActions.lifterReserves(chantierId)}
+              disabled={isPending}
+              className="bg-[oklch(0.82_0.15_175)] text-black hover:bg-[oklch(0.75_0.15_175)] gap-2"
+            >
+              {isPending && <Loader2 className="size-4 animate-spin" />}
+              Lever les réserves
+            </Button>
+          </ActionCard>
+        )}
+
+        {/* ── Chantier en pause (réserves majeures) ── */}
+        {chantier.status === ChantierStatus.Paused &&
+          (role === 'particulier') && (
+          <ActionCard title="Chantier suspendu — réserves majeures" icon={<AlertTriangle className="size-5 text-amber-400" />}>
+            <p className="text-sm text-muted-foreground mb-4">
+              Le chantier est en pause suite à des réserves majeures. Reprenez le chantier
+              une fois les problèmes résolus — le jalon courant sera remis à zéro.
+            </p>
+            <Button
+              onClick={() => jalonActions.resumeChantier(chantierId)}
+              disabled={isPending}
+              variant="outline"
+              className="gap-2"
+            >
+              <RotateCcw className="size-4" />
+              Reprendre le chantier
+            </Button>
+          </ActionCard>
+        )}
+
+        {/* ── En litige ── */}
+        {chantier.status === ChantierStatus.InLitige && (
+          <ActionCard title="Litige en cours" icon={<ShieldOff className="size-5 text-red-400" />}>
+            <p className="text-sm text-muted-foreground mb-4">
+              L'arbitre doit résoudre ce litige. En attente de sa décision.
+              Le score de l'artisan est gelé pendant la procédure.
+            </p>
+            {/* Panel arbitre — visible si l'adresse ne correspond à aucune partie */}
+            {role === 'viewer' && (
+              <div className="space-y-3 border-t border-border/30 pt-3">
+                <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Résolution arbitre</p>
+                <div className="flex gap-3 flex-wrap">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Responsabilité</Label>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant={artisanEnTort ? 'default' : 'outline'}
+                        onClick={() => setArtisanEnTort(true)}
+                      >
+                        Artisan en tort
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={!artisanEnTort ? 'default' : 'outline'}
+                        onClick={() => setArtisanEnTort(false)}
+                      >
+                        Particulier en tort
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="space-y-1 w-32">
+                    <Label className="text-xs">Retenue plateforme (BPS)</Label>
+                    <Input
+                      type="number" min="0" max="10000"
+                      value={blockedBps}
+                      onChange={e => setBlockedBps(e.target.value)}
+                      className="text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1 w-32">
+                    <Label className="text-xs">Pénalité (BPS, max 5000)</Label>
+                    <Input
+                      type="number" min="0" max="5000"
+                      value={penaltyBps}
+                      onChange={e => setPenaltyBps(e.target.value)}
+                      className="text-sm"
+                    />
+                  </div>
+                </div>
+                <Button
+                  onClick={() => jalonActions.resolveLitige(
+                    chantierId,
+                    artisanEnTort,
+                    BigInt(blockedBps),
+                    BigInt(penaltyBps)
+                  )}
+                  disabled={isPending}
+                  className="gap-2"
+                >
+                  {isPending && <Loader2 className="size-4 animate-spin" />}
+                  Résoudre le litige
+                </Button>
+              </div>
+            )}
+          </ActionCard>
+        )}
+
+        {/* ── PARTICULIER : annuler avant le 1er jalon ── */}
+        {role === 'particulier' &&
+          chantier.status === ChantierStatus.Active &&
+          chantier.currentJalonIndex === 0 &&
+          currentJalon?.status === JalonStatus.Pending && (
+          <ActionCard title="Annuler le chantier" icon={<XCircle className="size-5 text-red-400" />}>
+            <p className="text-sm text-muted-foreground mb-4">
+              L'artisan n'a pas encore démarré. En annulant, il reçoit le montant du 1er jalon ({formatUsdc(jalons[0]?.amount ?? 0n)})
+              en compensation et vous récupérez le reste.
+            </p>
+            <Button
+              variant="destructive"
+              onClick={() => jalonActions.cancelChantier(chantierId)}
+              disabled={isPending}
+              className="gap-2"
+            >
+              {isPending && <Loader2 className="size-4 animate-spin" />}
+              Annuler le chantier
+            </Button>
+          </ActionCard>
+        )}
+
+        {/* ── Chantier terminé ── */}
+        {chantier.status === ChantierStatus.Completed && (
+          <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-6 text-center space-y-2">
+            <CheckCircle2 className="size-10 text-emerald-400 mx-auto" />
+            <h3 className="font-bold text-lg">Chantier terminé</h3>
+            <p className="text-sm text-muted-foreground">
+              Tous les jalons ont été validés. Le buffer de 10% a été retourné au particulier.
+            </p>
+          </div>
+        )}
+
+        {/* Erreur transaction */}
+        {jalonActions.error && (
+          <Alert variant="destructive">
+            <AlertDescription className="text-sm">
+              {(jalonActions.error as Error).message}
+            </AlertDescription>
+          </Alert>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// Carte d'action réutilisable
+function ActionCard({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border border-border/50 bg-card p-5">
+      <div className="flex items-center gap-2 mb-4">
+        {icon}
+        <h3 className="font-semibold">{title}</h3>
+      </div>
+      {children}
+    </div>
+  )
+}

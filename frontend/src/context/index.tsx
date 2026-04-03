@@ -3,36 +3,36 @@
 import { wagmiAdapter, projectId } from '@/config'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createAppKit } from '@reown/appkit/react'
-import { hardhat } from '@reown/appkit/networks'
+import { hardhat, arbitrumSepolia } from '@reown/appkit/networks'
 import React, { type ReactNode } from 'react'
 import { cookieToInitialState, WagmiProvider, type Config } from 'wagmi'
 
-// Set up queryClient
 const queryClient = new QueryClient()
 
 if (!projectId) {
-  throw new Error('Project ID is not defined')
+  throw new Error('Project ID is not defined — set NEXT_PUBLIC_PROJECT_ID in .env.local')
 }
 
-// Set up metadata
 const metadata = {
-  name: 'appkit-example',
-  description: 'AppKit Example',
-  url: 'https://appkitexampleapp.com', // origin must match your domain & subdomain
-  icons: ['https://avatars.githubusercontent.com/u/179229932']
+  name: 'Trust BTP',
+  description: 'Séquestre décentralisé pour chantiers BTP',
+  url: 'https://trustbtp.app',
+  icons: ['https://avatars.githubusercontent.com/u/179229932'],
 }
 
-// Create the modal
-const modal = createAppKit({
+createAppKit({
   adapters: [wagmiAdapter],
   projectId,
-  networks: [hardhat],
+  networks: [hardhat, arbitrumSepolia],
   defaultNetwork: hardhat,
-  metadata: metadata,
-  themeMode: "dark",
+  metadata,
+  themeMode: 'dark',
+  themeVariables: {
+    '--w3m-accent': 'oklch(0.82 0.15 175)',
+  },
   features: {
-    analytics: true // Optional - defaults to your Cloud configuration
-  }
+    analytics: false,
+  },
 })
 
 function ContextProvider({ children, cookies }: { children: ReactNode; cookies: string | null }) {

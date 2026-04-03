@@ -1,19 +1,17 @@
-'use client';
-import { useConnection } from "wagmi";
-import Bank from "@/components/shared/Bank";
-import NotConnected from "@/components/shared/NotConnected";
+'use client'
+
+import { useAccount } from 'wagmi'
+import { Dashboard } from '@/components/chantier/Dashboard'
+import NotConnected from '@/components/shared/NotConnected'
 
 export default function Home() {
+  const { isConnected } = useAccount()
 
-  const { isConnected } = useConnection();
-
-  return (
-    <div>
-      {isConnected ? (
-        <Bank />
-      ) : (
-        <NotConnected />
-      )}
+  return isConnected ? (
+    <div className="container max-w-5xl mx-auto px-4 py-8">
+      <Dashboard />
     </div>
-  );
+  ) : (
+    <NotConnected />
+  )
 }

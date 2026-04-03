@@ -1,0 +1,64 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { parseAbiItem } from 'viem'
+import { publicClient } from '@/lib/client'
+import { ESCROW_VAULT_ADDRESS } from '@/lib/contracts'
+
+// Charge les IDs de chantiers liés à une adresse (en tant qu'artisan ou particulier)
+// via les événements DevisSoumis
+export function useChantiersByAddress(address: `0x${string}` | undefined) {
+  const [chantierIds, setChantierIds] = useState<bigint[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    if (!address) {
+      setChantierIds([])
+      return
+    }
+
+    const load = async () => {
+      setIsLoading(true)
+      try {
+        // Chantiers où l'adresse est artisan
+        const asArtisan = await publicClient.getLogs({
+          address: ESCROW_VAULT_ADDRESS,
+          event: parseAbiItem(
+            'event DevisSoumis(uint256 indexed chantierId, address indexed artisan, address indexed particulier, address token, uint256 devisAmount)'
+          ),
+          args: { artisan: address },
+          fromBlock: 0n,
+          toBlock: 'latest',
+        })
+
+        // Chantiers où l'adresse est particulier
+        const asParticulier = await publicClient.getLogs({
+          address: ESCROW_VAULT_ADDRESS,
+          event: parseAbiItem(
+            'event DevisSoumis(uint256 indexed chantierId, address indexed artisan, address indexed particulier, address token, uint256 devisAmount)'
+          ),
+          args: { particulier: address },
+          fromBlock: 0n,
+          toBlock: 'latest',
+        })
+
+        const ids = new Set<bigint>()
+        for (const log of [...asArtisan, ...asParticulier]) {
+          if (log.args.chantierId !== undefined) ids.add(log.args.chantierId)
+        }
+
+        // Tri décroissant (plus récent en premier)
+        setChantierIds([...ids].sort((a, b) => (b > a ? 1 : -1)))
+      } catch (e) {
+        console.error('Erreur chargement chantiers:', e)
+        setChantierIds([])
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    load()
+  }, [address])
+
+  return { chantierIds, isLoading }
+}
