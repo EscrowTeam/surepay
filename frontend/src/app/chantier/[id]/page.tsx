@@ -40,7 +40,7 @@ export default function ChantierDetailPage({ params }: Props) {
   const [penaltyBps, setPenaltyBps] = useState('200')
 
   const depositAmount = chantier ? (chantier.devisAmount * 11n) / 10n : 0n
-  const acceptDevis = useAcceptDevis(chantierId, depositAmount, address)
+  const acceptDevis = useAcceptDevis(chantierId, depositAmount, address, refetch)
 
   if (isLoading || !chantier) {
     return (

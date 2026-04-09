@@ -1,11 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi'
 import { ESCROW_VAULT_ADDRESS, ESCROW_VAULT_ABI, USDC_ADDRESS, ERC20_ABI } from '@/lib/contracts'
 
 // Hook particulier — approve USDC puis accepte le devis (2 transactions séquentielles)
-export function useAcceptDevis(chantierId: bigint, depositAmount: bigint, walletAddress: `0x${string}` | undefined) {
+export function useAcceptDevis(
+  chantierId: bigint,
+  depositAmount: bigint,
+  walletAddress: `0x${string}` | undefined,
+  onSuccess?: () => void
+) {
   const [step, setStep] = useState<'idle' | 'approving' | 'accepting' | 'done'>('idle')
 
   // Lecture de l'allowance actuelle
@@ -61,9 +66,12 @@ export function useAcceptDevis(chantierId: bigint, depositAmount: bigint, wallet
     setStep('idle')
   }
 
-  if (acceptSuccess && step === 'accepting') {
-    setStep('done')
-  }
+  useEffect(() => {
+    if (acceptSuccess && step === 'accepting') {
+      setStep('done')
+      onSuccess?.()
+    }
+  }, [acceptSuccess]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return {
     approve,
