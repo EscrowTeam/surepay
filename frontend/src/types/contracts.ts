@@ -29,6 +29,7 @@ export enum TrustTier {
 
 export interface Chantier {
   id: bigint
+  name: string
   artisan: `0x${string}`
   particulier: `0x${string}`
   token: `0x${string}`

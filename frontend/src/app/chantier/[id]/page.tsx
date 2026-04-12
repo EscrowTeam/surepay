@@ -2,7 +2,6 @@
 
 import { use, useState } from 'react'
 import { useAccount } from 'wagmi'
-import { useRouter } from 'next/navigation'
 import {
   Loader2, CheckCircle2, AlertTriangle, ShieldOff, RotateCcw,
   XCircle, Zap, Clock, Info
@@ -27,13 +26,14 @@ export default function ChantierDetailPage({ params }: Props) {
   const { id } = use(params)
   const chantierId = BigInt(id)
   const { address } = useAccount()
-  const router = useRouter()
-  const { chantier, jalons, isLoading, refetch } = useChantier(chantierId)
+const { chantier, jalons, isLoading, refetch } = useChantier(chantierId)
   const jalonActions = useJalonActions(refetch)
 
   // Formulaire proof hash
   const [proofInput, setProofInput] = useState('')
   const [clientProofInput, setClientProofInput] = useState('')
+  // Yield opt-in pour l'acceptation du devis
+  const [yieldOptIn, setYieldOptIn] = useState(false)
   // Litige resolve form (arbitre)
   const [artisanEnTort, setArtisanEnTort] = useState(true)
   const [blockedBps, setBlockedBps] = useState('500')
@@ -101,10 +101,16 @@ export default function ChantierDetailPage({ params }: Props) {
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl font-bold">{jalons[0]?.description ?? `Chantier #${id}`}</h1>
+              {(() => {
+                const full = chantier.name || jalons[0]?.description || `Chantier #${id}`
+                const display = full.length > 20 ? full.slice(0, 20) + '…' : full
+                return <h1 className="text-xl font-bold" title={full}>{display}</h1>
+              })()}
               <ChantierStatusBadge status={chantier.status} />
             </div>
-            <p className="text-xs text-muted-foreground">ID #{id}</p>
+            <p className="text-xs text-muted-foreground">
+              ID #{id}{chantier.name && jalons[0]?.description ? ` · ${jalons[0].description}` : ''}
+            </p>
           </div>
           <div className="text-right">
             <div className="text-2xl font-bold text-[oklch(0.82_0.15_175)]">
@@ -193,38 +199,56 @@ export default function ChantierDetailPage({ params }: Props) {
         {role === 'particulier' && chantier.status === ChantierStatus.DevisSubmitted && (
           <ActionCard title="Devis en attente de signature" icon={<Info className="size-5 text-blue-400" />}>
             <p className="text-sm text-muted-foreground mb-4">
-              L'artisan a soumis ce devis. Vous devez d'abord approuver {formatUsdc(depositAmount)} USDC (110% du devis),
-              puis signer le contrat.
+              L'artisan a soumis ce devis. Signez l'autorisation (sans gas), puis déposez{' '}
+              <strong>{formatUsdc(depositAmount)}</strong> USDC (110% du montant) en une seule transaction.
             </p>
-            <div className="flex items-center gap-1 mb-4">
+            <div className="flex items-center gap-2 mb-5">
               <input
                 id="yieldOptIn"
                 type="checkbox"
                 className="rounded"
-                onChange={e => {/* géré au clic accept */}}
+                checked={yieldOptIn}
+                onChange={e => setYieldOptIn(e.target.checked)}
               />
-              <label htmlFor="yieldOptIn" className="text-sm ml-2 cursor-pointer">
+              <label htmlFor="yieldOptIn" className="text-sm cursor-pointer">
                 Activer le yield DeFi (Aave V3) — les fonds génèrent des intérêts pendant le chantier
               </label>
             </div>
+
+            {/* Étapes visuelles */}
+            <div className="flex items-center gap-2 mb-4 text-xs text-muted-foreground">
+              <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold ${acceptDevis.isSigned ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10'}`}>
+                {acceptDevis.isSigned ? '✓' : '1'}
+              </span>
+              <span className={acceptDevis.isSigned ? 'text-emerald-400' : ''}>
+                Signer le permit (off-chain, sans gas)
+              </span>
+              <span className="mx-1">→</span>
+              <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold ${acceptDevis.step === 'done' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10'}`}>
+                2
+              </span>
+              <span>Déposer et activer le chantier</span>
+            </div>
+
             <div className="flex gap-2 flex-wrap">
-              {!acceptDevis.isAlreadyApproved ? (
+              {!acceptDevis.isSigned ? (
                 <Button
-                  onClick={acceptDevis.approve}
-                  disabled={isPending}
+                  onClick={acceptDevis.sign}
+                  disabled={isPending || acceptDevis.step === 'signing'}
                   className="bg-[oklch(0.82_0.15_175)] text-black hover:bg-[oklch(0.75_0.15_175)] gap-2"
                 >
-                  {isPending && <Loader2 className="size-4 animate-spin" />}
-                  1. Approuver {formatUsdc(depositAmount)} USDC
+                  {acceptDevis.step === 'signing' && <Loader2 className="size-4 animate-spin" />}
+                  <Zap className="size-4" />
+                  1. Signer le permit
                 </Button>
               ) : (
                 <Button
-                  onClick={() => acceptDevis.accept(false)}
+                  onClick={() => acceptDevis.accept(yieldOptIn)}
                   disabled={isPending}
                   className="bg-[oklch(0.82_0.15_175)] text-black hover:bg-[oklch(0.75_0.15_175)] gap-2"
                 >
                   {isPending && <Loader2 className="size-4 animate-spin" />}
-                  2. Signer et déposer
+                  2. Déposer {formatUsdc(depositAmount)}
                 </Button>
               )}
               <Button
@@ -235,8 +259,14 @@ export default function ChantierDetailPage({ params }: Props) {
                 Refuser le devis
               </Button>
             </div>
-            {acceptDevis.isAlreadyApproved && (
-              <p className="text-xs text-emerald-400 mt-2">✓ USDC approuvé — vous pouvez signer le contrat</p>
+
+            {acceptDevis.isSigned && (
+              <p className="text-xs text-emerald-400 mt-2">
+                ✓ Permit signé (valide 20 min) — confirmez la transaction de dépôt
+              </p>
+            )}
+            {acceptDevis.error && (
+              <p className="text-xs text-red-400 mt-2">{(acceptDevis.error as Error).message}</p>
             )}
           </ActionCard>
         )}
@@ -245,20 +275,20 @@ export default function ChantierDetailPage({ params }: Props) {
         {role === 'artisan' &&
           chantier.status === ChantierStatus.Active &&
           currentJalon?.status === JalonStatus.Pending && (
-          <ActionCard title="Valider ce jalon" icon={<CheckCircle2 className="size-5 text-[oklch(0.82_0.15_175)]" />}>
+          <ActionCard title={`Demander la libération du jalon ${chantier.currentJalonIndex + 1} — ${formatUsdc(currentJalon?.amount ?? 0n)}`} icon={<CheckCircle2 className="size-5 text-[oklch(0.82_0.15_175)]" />}>
             <p className="text-sm text-muted-foreground mb-3">
-              Déclarez le jalon {chantier.currentJalonIndex + 1} terminé et soumettez votre preuve.
-              Le particulier dispose de 48h pour valider ou lever des réserves.
+              Déclarez les travaux de ce jalon terminés et joignez votre preuve d'exécution.
+              Le client dispose de 48h pour valider ou formuler des réserves — sans réponse, le paiement est libéré automatiquement.
             </p>
             <div className="space-y-2 mb-4">
-              <Label className="text-xs">Preuve (description, URL, CID IPFS ou hash 0x...)</Label>
+              <Label className="text-xs">Preuve d'exécution (description, URL photo, CID IPFS ou hash 0x...)</Label>
               <Input
-                placeholder="Description de la preuve ou hash 0x..."
+                placeholder="Ex : Photos des travaux, procès-verbal, lien IPFS..."
                 value={proofInput}
                 onChange={e => setProofInput(e.target.value)}
                 className="text-sm font-mono"
               />
-              <p className="text-xs text-muted-foreground">Laissez vide pour générer un hash automatique.</p>
+              <p className="text-xs text-muted-foreground">Laissez vide pour générer un identifiant automatique.</p>
             </div>
             <Button
               onClick={handleValidateJalon}
@@ -266,7 +296,7 @@ export default function ChantierDetailPage({ params }: Props) {
               className="bg-[oklch(0.82_0.15_175)] text-black hover:bg-[oklch(0.75_0.15_175)] gap-2"
             >
               {isPending && <Loader2 className="size-4 animate-spin" />}
-              Soumettre la preuve
+              Déclarer le jalon terminé et demander le paiement
             </Button>
           </ActionCard>
         )}

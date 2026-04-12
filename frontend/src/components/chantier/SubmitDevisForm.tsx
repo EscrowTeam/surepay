@@ -22,11 +22,13 @@ const DEFAULT_JALON: JalonField = { description: '', amount: '' }
 export function SubmitDevisForm() {
   const router = useRouter()
   const [particulier, setParticulier] = useState('')
+  const [nomChantier, setNomChantier] = useState('')
   const [jalons, setJalons] = useState<JalonField[]>([{ ...DEFAULT_JALON }, { ...DEFAULT_JALON }])
   const { submitDevis, isPending, isSuccess, error } = useSubmitDevis()
 
   const totalAmount = jalons.reduce((sum, j) => sum + parseUsdc(j.amount), 0n)
   const allFilled = particulier.startsWith('0x') && particulier.length === 42 &&
+    nomChantier.trim().length > 0 &&
     jalons.every(j => j.description.trim() && parseUsdc(j.amount) > 0n)
 
   function addJalon() {
@@ -48,6 +50,7 @@ export function SubmitDevisForm() {
       particulier as `0x${string}`,
       USDC_ADDRESS,
       totalAmount,
+      nomChantier.trim(),
       jalons.map(j => j.description),
       jalons.map(j => parseUsdc(j.amount))
     )
@@ -76,6 +79,18 @@ export function SubmitDevisForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Nom du chantier */}
+      <div className="space-y-2">
+        <Label htmlFor="nomChantier">Nom du chantier</Label>
+        <Input
+          id="nomChantier"
+          placeholder="Ex : Rénovation salle de bain, Extension terrasse..."
+          value={nomChantier}
+          onChange={e => setNomChantier(e.target.value)}
+          className="text-sm"
+        />
+      </div>
+
       {/* Adresse du particulier */}
       <div className="space-y-2">
         <Label htmlFor="particulier">Adresse du client (particulier)</Label>

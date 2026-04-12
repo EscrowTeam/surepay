@@ -28,6 +28,7 @@ export const ESCROW_VAULT_ABI = [
     inputs: [{ name: '', type: 'uint256' }],
     outputs: [
       { name: 'id', type: 'uint256' },
+      { name: 'name', type: 'string' },
       { name: 'artisan', type: 'address' },
       { name: 'particulier', type: 'address' },
       { name: 'token', type: 'address' },
@@ -72,6 +73,7 @@ export const ESCROW_VAULT_ABI = [
       { name: 'particulier', type: 'address' },
       { name: 'token', type: 'address' },
       { name: 'devisAmount', type: 'uint256' },
+      { name: 'name', type: 'string' },
       { name: 'jalonDescriptions', type: 'string[]' },
       { name: 'jalonAmounts', type: 'uint256[]' },
     ],
@@ -106,12 +108,16 @@ export const ESCROW_VAULT_ABI = [
     outputs: [],
   },
   {
-    name: 'acceptDevis',
+    name: 'acceptDevisWithPermit',
     type: 'function',
     stateMutability: 'nonpayable',
     inputs: [
       { name: 'chantierId', type: 'uint256' },
       { name: 'yieldOptIn', type: 'bool' },
+      { name: 'deadline', type: 'uint256' },
+      { name: 'v', type: 'uint8' },
+      { name: 'r', type: 'bytes32' },
+      { name: 's', type: 'bytes32' },
     ],
     outputs: [],
   },
@@ -297,31 +303,36 @@ export const TRUST_SCORE_REGISTRY_ABI = [
 
 export const ERC20_ABI = [
   {
-    name: 'approve',
-    type: 'function',
-    stateMutability: 'nonpayable',
-    inputs: [
-      { name: 'spender', type: 'address' },
-      { name: 'amount', type: 'uint256' },
-    ],
-    outputs: [{ type: 'bool' }],
-  },
-  {
-    name: 'allowance',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [
-      { name: 'owner', type: 'address' },
-      { name: 'spender', type: 'address' },
-    ],
-    outputs: [{ type: 'uint256' }],
-  },
-  {
     name: 'balanceOf',
     type: 'function',
     stateMutability: 'view',
     inputs: [{ name: 'account', type: 'address' }],
     outputs: [{ type: 'uint256' }],
+  },
+] as const
+
+// EIP-2612 permit ABI — pour USDC (Circle) et ERC20Permit (OZ v5)
+export const ERC20_PERMIT_ABI = [
+  {
+    name: 'nonces',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'owner', type: 'address' }],
+    outputs: [{ type: 'uint256' }],
+  },
+  {
+    name: 'name',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ type: 'string' }],
+  },
+  {
+    name: 'version',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ type: 'string' }],
   },
 ] as const
 

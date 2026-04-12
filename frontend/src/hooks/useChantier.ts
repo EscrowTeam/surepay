@@ -2,7 +2,7 @@
 
 import { useReadContract } from 'wagmi'
 import { ESCROW_VAULT_ADDRESS, ESCROW_VAULT_ABI } from '@/lib/contracts'
-import { Chantier, Jalon } from '@/types/contracts'
+import { Chantier, ChantierStatus, Jalon } from '@/types/contracts'
 
 // Lit les données complètes d'un chantier (struct + jalons)
 export function useChantier(chantierId: bigint | undefined) {
@@ -24,19 +24,20 @@ export function useChantier(chantierId: bigint | undefined) {
 
   const chantier: Chantier | undefined = raw
     ? {
-        id: raw[0],
-        artisan: raw[1],
-        particulier: raw[2],
-        token: raw[3],
-        devisAmount: raw[4],
-        depositAmount: raw[5],
-        yieldOptIn: raw[6],
-        status: raw[7],
-        currentJalonIndex: raw[8],
-        jalonCount: raw[9],
-        submittedAt: raw[10],
-        acceptedAt: raw[11],
-        completedAt: raw[12],
+        id: raw[0] as bigint,
+        name: raw[1] as string,
+        artisan: raw[2] as `0x${string}`,
+        particulier: raw[3] as `0x${string}`,
+        token: raw[4] as `0x${string}`,
+        devisAmount: raw[5] as bigint,
+        depositAmount: raw[6] as bigint,
+        yieldOptIn: raw[7] as boolean,
+        status: Number(raw[8]) as ChantierStatus,
+        currentJalonIndex: Number(raw[9]),
+        jalonCount: Number(raw[10]),
+        submittedAt: raw[11] as bigint,
+        acceptedAt: raw[12] as bigint,
+        completedAt: raw[13] as bigint,
       }
     : undefined
 

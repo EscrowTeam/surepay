@@ -45,10 +45,52 @@ describe("EscrowVault", () => {
   const DESCS = ["Fondations", "Gros œuvre", "Couverture", "Second œuvre", "Finitions"];
   const MONTANTS = [usdc(2_000), usdc(2_000), usdc(2_000), usdc(2_000), usdc(2_000)];
 
+  /**
+   * Génère une signature EIP-2612 permit.
+   * Utilise eip712Domain() d'OZ v5 pour récupérer name/version/chainId.
+   */
+  async function signPermit(
+    token: any,
+    owner: any,
+    spender: string,
+    value: bigint,
+    deadline: bigint
+  ) {
+    const domain = await token.eip712Domain();
+    const nonce = await token.nonces(owner.address);
+
+    const sig = await owner.signTypedData(
+      {
+        name: domain.name,
+        version: domain.version,
+        chainId: domain.chainId,
+        verifyingContract: domain.verifyingContract,
+      },
+      {
+        Permit: [
+          { name: "owner",    type: "address" },
+          { name: "spender",  type: "address" },
+          { name: "value",    type: "uint256" },
+          { name: "nonce",    type: "uint256" },
+          { name: "deadline", type: "uint256" },
+        ],
+      },
+      { owner: owner.address, spender, value, nonce, deadline }
+    );
+
+    return ethers.Signature.from(sig);
+  }
+
+  /** Retourne un deadline 1 heure dans le futur (suffisant pour les tests) */
+  async function futureDeadline(): Promise<bigint> {
+    const block = await ethers.provider.getBlock("latest");
+    return BigInt(block!.timestamp) + 3600n;
+  }
+
   async function deployer() {
     [owner, treasury, arbiter, particulier, artisan, stranger] = await ethers.getSigners();
 
-    // Token ERC-20 mock (USDC 6 décimales)
+    // Token ERC-20 mock avec EIP-2612 permit (USDC 6 décimales)
     const ERC20Mock = await ethers.getContractFactory("ERC20Mock");
     mockUSDC = await ERC20Mock.deploy("Mock USDC", "USDC", 6);
     await mockUSDC.mint(particulier.address, usdc(100_000));
@@ -77,8 +119,7 @@ describe("EscrowVault", () => {
     await nft.connect(owner).transferOwnership(await vault.getAddress());
     // Vault autorise USDC
     await vault.connect(owner).setAllowedToken(await mockUSDC.getAddress(), true);
-    // Approbation ERC-20 du particulier vers le vault
-    await mockUSDC.connect(particulier).approve(await vault.getAddress(), usdc(100_000));
+    // Pas d'approve() préalable — on utilise EIP-2612 permit dans acceptDevisWithPermit()
   }
 
   /** Soumet un devis standard (5 jalons de 2 000 USDC) et retourne le chantierId */
@@ -86,7 +127,10 @@ describe("EscrowVault", () => {
     const tx = await vault.connect(artisan).submitDevis(
       particulier.address,
       await mockUSDC.getAddress(),
-      DEVIS, DESCS, MONTANTS
+      DEVIS,
+      "Rénovation appartement T3",
+      DESCS,
+      MONTANTS
     );
     const receipt = await tx.wait();
     const ev = receipt?.logs
@@ -95,10 +139,20 @@ describe("EscrowVault", () => {
     return ev?.args?.chantierId ?? 0n;
   }
 
-  /** Soumet puis accepte un devis — retourne le chantierId */
+  /** Soumet puis accepte un devis via permit — retourne le chantierId */
   async function creerChantierActif(): Promise<bigint> {
     const id = await soumettreDevis();
-    await vault.connect(particulier).acceptDevis(id, false);
+    const deadline = await futureDeadline();
+    const sig = await signPermit(
+      mockUSDC,
+      particulier,
+      await vault.getAddress(),
+      DEPOSIT,
+      deadline
+    );
+    await vault.connect(particulier).acceptDevisWithPermit(
+      id, false, deadline, sig.v, sig.r, sig.s
+    );
     return id;
   }
 
@@ -133,7 +187,7 @@ describe("EscrowVault", () => {
 
     it("émet DevisSoumis", async () => {
       await expect(
-        vault.connect(artisan).submitDevis(particulier.address, await mockUSDC.getAddress(), DEVIS, DESCS, MONTANTS)
+        vault.connect(artisan).submitDevis(particulier.address, await mockUSDC.getAddress(), DEVIS, "Test", DESCS, MONTANTS)
       ).to.emit(vault, "DevisSoumis");
     });
 
@@ -141,20 +195,20 @@ describe("EscrowVault", () => {
       const Fake = await ethers.getContractFactory("ERC20Mock");
       const fake = await Fake.deploy("Fake", "FAKE", 6);
       await expect(
-        vault.connect(artisan).submitDevis(particulier.address, await fake.getAddress(), DEVIS, DESCS, MONTANTS)
+        vault.connect(artisan).submitDevis(particulier.address, await fake.getAddress(), DEVIS, "Test", DESCS, MONTANTS)
       ).to.be.revertedWithCustomError(vault, "TokenNonAutorise");
     });
 
     it("rejette si la somme des jalons ≠ devis", async () => {
       const mauvais = [usdc(1_000), usdc(2_000), usdc(2_000), usdc(2_000), usdc(2_000)];
       await expect(
-        vault.connect(artisan).submitDevis(particulier.address, await mockUSDC.getAddress(), DEVIS, DESCS, mauvais)
+        vault.connect(artisan).submitDevis(particulier.address, await mockUSDC.getAddress(), DEVIS, "Test", DESCS, mauvais)
       ).to.be.revertedWithCustomError(vault, "SommeJalonsMismatch");
     });
 
     it("rejette avec 0 jalons", async () => {
       await expect(
-        vault.connect(artisan).submitDevis(particulier.address, await mockUSDC.getAddress(), DEVIS, [], [])
+        vault.connect(artisan).submitDevis(particulier.address, await mockUSDC.getAddress(), DEVIS, "Test", [], [])
       ).to.be.revertedWithCustomError(vault, "NombreJalonsInvalide");
     });
   });
@@ -185,10 +239,10 @@ describe("EscrowVault", () => {
     });
   });
 
-  // ── Acceptation du devis ─────────────────────────────────────────────────────
+  // ── Acceptation du devis (EIP-2612) ─────────────────────────────────────────
 
-  describe("acceptDevis()", () => {
-    it("prélève 110% et passe le chantier en Active", async () => {
+  describe("acceptDevisWithPermit()", () => {
+    it("prélève 110% via permit et passe le chantier en Active", async () => {
       const avant = await mockUSDC.balanceOf(particulier.address);
       const id = await creerChantierActif();
       const apres = await mockUSDC.balanceOf(particulier.address);
@@ -200,7 +254,6 @@ describe("EscrowVault", () => {
 
     it("minte 1 NFT détenu par le vault (tokenId = chantierId)", async () => {
       const id = await creerChantierActif();
-      // Le tokenId est égal au chantierId
       expect(await nft.ownerOf(id)).to.equal(await vault.getAddress());
     });
 
@@ -237,10 +290,39 @@ describe("EscrowVault", () => {
       expect(await nft.getJalonStatus(id, 0)).to.equal(2n); // 2 = Accepted
     });
 
-    it("rejette si appelé par un tiers", async () => {
+    it("rejette si appelé par un tiers (modifier avant permit)", async () => {
       const id = await soumettreDevis();
-      await expect(vault.connect(stranger).acceptDevis(id, false))
-        .to.be.revertedWithCustomError(vault, "PasLeParticulier");
+      const deadline = await futureDeadline();
+      // La signature n'est pas validée car le modifier PasLeParticulier revert en premier
+      const sig = await signPermit(
+        mockUSDC,
+        stranger,
+        await vault.getAddress(),
+        DEPOSIT,
+        deadline
+      );
+      await expect(
+        vault.connect(stranger).acceptDevisWithPermit(id, false, deadline, sig.v, sig.r, sig.s)
+      ).to.be.revertedWithCustomError(vault, "PasLeParticulier");
+    });
+
+    it("rejette si le permit est expiré", async () => {
+      const id = await soumettreDevis();
+      // Deadline dans le passé
+      const block = await ethers.provider.getBlock("latest");
+      const deadline = BigInt(block!.timestamp) - 1n;
+      const sig = await signPermit(
+        mockUSDC,
+        particulier,
+        await vault.getAddress(),
+        DEPOSIT,
+        deadline
+      );
+      // Le permit échoue silencieusement (try/catch) puis safeTransferFrom échoue
+      // car l'allowance n'a pas été mise à jour
+      await expect(
+        vault.connect(particulier).acceptDevisWithPermit(id, false, deadline, sig.v, sig.r, sig.s)
+      ).to.be.revert(ethers);
     });
   });
 

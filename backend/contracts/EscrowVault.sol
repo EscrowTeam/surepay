@@ -4,6 +4,7 @@ pragma solidity ^0.8.28;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {DataTypes} from "./libraries/DataTypes.sol";
@@ -19,8 +20,8 @@ import {IChantierNFT} from "./interfaces/IChantierNFT.sol";
 ///
 /// @dev Flux principal :
 ///   1. Artisan soumet un devis  → submitDevis()
-///   2a. Particulier refuse       → rejectDevis()   [chantier clôturé]
-///   2b. Particulier accepte      → acceptDevis()   [NFT minté + 110% déposés]
+///   2a. Particulier refuse       → rejectDevis()              [chantier clôturé]
+///   2b. Particulier accepte      → acceptDevisWithPermit()    [NFT minté + 110% déposés, EIP-2612]
 ///   3. Pour chaque jalon :
 ///       - Artisan valide         → validateJalon()
 ///       - Particulier a 48h pour lever des réserves
@@ -32,8 +33,6 @@ import {IChantierNFT} from "./interfaces/IChantierNFT.sol";
 ///
 /// Token supporté : USDC uniquement (EURC prévu dans une version future)
 ///
-/// TODO EIP-2612 : ajouter acceptDevisWithPermit(chantierId, yieldOptIn, deadline, v, r, s)
-///                 pour permettre dépôt + signature en une seule transaction sans approve préalable.
 contract EscrowVault is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
@@ -235,6 +234,7 @@ contract EscrowVault is Ownable, ReentrancyGuard {
     /// @param particulier        Adresse du client
     /// @param token              Token de paiement (USDC)
     /// @param devisAmount        Montant total du devis (= somme des jalons)
+    /// @param name               Nom libre du chantier
     /// @param jalonDescriptions  Description de chaque jalon (max 5)
     /// @param jalonAmounts       Montant de chaque jalon
     /// @return chantierId        Identifiant unique du chantier créé
@@ -242,6 +242,7 @@ contract EscrowVault is Ownable, ReentrancyGuard {
         address particulier,
         address token,
         uint256 devisAmount,
+        string calldata name,
         string[] calldata jalonDescriptions,
         uint256[] calldata jalonAmounts
     ) external returns (uint256 chantierId) {
@@ -266,6 +267,7 @@ contract EscrowVault is Ownable, ReentrancyGuard {
 
         chantiers[chantierId] = DataTypes.Chantier({
             id: chantierId,
+            name: name,
             artisan: msg.sender,
             particulier: particulier,
             token: token,
@@ -322,11 +324,27 @@ contract EscrowVault is Ownable, ReentrancyGuard {
     ///
     /// @dev Prérequis ERC-20 : le particulier doit avoir approuvé ce contrat
     ///      pour au moins 110% du devisAmount AVANT d'appeler cette fonction.
-    ///      TODO EIP-2612 : utiliser permit() pour éviter cette approbation préalable.
+    /// @notice Le particulier accepte le devis, signe le permit EIP-2612 off-chain et
+    ///         dépose 110% du montant en une seule transaction (pas d'approbation préalable).
+    ///
+    ///         Le permit est consommé par IERC20Permit.permit() avant le transfert.
+    ///         En cas d'allowance déjà suffisante (ex: replay), permit() peut réussir
+    ///         ou être ignoré — le safeTransferFrom en fin de fonction garantit le prélèvement.
     ///
     /// @param chantierId  Identifiant du chantier
     /// @param yieldOptIn  true = les fonds déposés génèrent du yield DeFi (Aave V3)
-    function acceptDevis(uint256 chantierId, bool yieldOptIn)
+    /// @param deadline    Timestamp Unix d'expiration de la signature (ex: block.timestamp + 20 min)
+    /// @param v           Composante v de la signature EIP-2612
+    /// @param r           Composante r de la signature EIP-2612
+    /// @param s           Composante s de la signature EIP-2612
+    function acceptDevisWithPermit(
+        uint256 chantierId,
+        bool yieldOptIn,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    )
         external
         nonReentrant
         seulementParticulier(chantierId)
@@ -342,6 +360,12 @@ contract EscrowVault is Ownable, ReentrancyGuard {
         c.yieldOptIn = yieldOptIn;
         c.status = DataTypes.ChantierStatus.Active;
         c.acceptedAt = block.timestamp;
+
+        // Consommation du permit EIP-2612 — autorise le vault à prélever depositAmount
+        // Si l'allowance est déjà suffisante, le permit peut réussir ou échouer
+        // silencieusement via try/catch ; le safeTransferFrom ci-dessous est la vraie garde.
+        try IERC20Permit(c.token).permit(msg.sender, address(this), depositAmount, deadline, v, r, s) {}
+        catch {}
 
         // Prélèvement des fonds depuis le particulier
         IERC20(c.token).safeTransferFrom(msg.sender, address(this), depositAmount);

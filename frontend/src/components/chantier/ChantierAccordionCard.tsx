@@ -37,7 +37,8 @@ export function ChantierAccordionCard({ chantierId, walletAddress, defaultOpen =
 
   const validated = countValidatedJalons(jalons)
   const progress = chantier.jalonCount > 0 ? (validated / chantier.jalonCount) * 100 : 0
-  const title = jalons[0]?.description ?? `Chantier #${chantierId}`
+  const fullTitle = chantier.name || jalons[0]?.description || `Chantier #${chantierId}`
+  const title = fullTitle.length > 20 ? fullTitle.slice(0, 20) + '…' : fullTitle
   const counterpart = role === 'artisan'
     ? shortAddress(chantier.particulier)
     : shortAddress(chantier.artisan)
@@ -57,7 +58,7 @@ export function ChantierAccordionCard({ chantierId, walletAddress, defaultOpen =
       >
         <div className="flex flex-col items-start gap-1 text-left">
           <div className="flex items-center gap-2">
-            <span className="font-semibold text-foreground">{title}</span>
+            <span className="font-semibold text-foreground" title={fullTitle}>{title}</span>
             <span className="text-xs text-muted-foreground">#{chantierId.toString()}</span>
             <ChantierStatusBadge status={chantier.status} />
           </div>

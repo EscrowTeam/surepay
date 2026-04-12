@@ -13,6 +13,7 @@ export function useSubmitDevis() {
     particulier: `0x${string}`,
     token: `0x${string}`,
     devisAmount: bigint,
+    name: string,
     descriptions: string[],
     amounts: bigint[]
   ) {
@@ -20,7 +21,7 @@ export function useSubmitDevis() {
       address: ESCROW_VAULT_ADDRESS,
       abi: ESCROW_VAULT_ABI,
       functionName: 'submitDevis',
-      args: [particulier, token, devisAmount, descriptions, amounts],
+      args: [particulier, token, devisAmount, name, descriptions, amounts],
     })
   }
 

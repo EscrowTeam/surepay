@@ -54,7 +54,7 @@ export function JalonRow({ jalon, index, isCurrent, role, chantierId, onValidate
         {/* Actions inline — seulement pour le jalon courant */}
         {isCurrent && role === 'artisan' && jalon.status === JalonStatus.Pending && onValidate && (
           <Button size="sm" onClick={onValidate} className="bg-[oklch(0.82_0.15_175)] text-black hover:bg-[oklch(0.75_0.15_175)]">
-            Valider
+            Demander paiement
           </Button>
         )}
         {isCurrent && role === 'artisan' && jalon.status === JalonStatus.AcceptedWithReserves && onOpenDetail && (

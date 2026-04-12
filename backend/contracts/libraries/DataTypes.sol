@@ -90,6 +90,8 @@ library DataTypes {
     /// @notice Données d'un chantier
     struct Chantier {
         uint256 id;
+        /// @dev Nom libre du chantier saisi par l'artisan
+        string name;
         /// @dev Artisan — initiateur du devis
         address artisan;
         /// @dev Particulier — client destinataire du devis

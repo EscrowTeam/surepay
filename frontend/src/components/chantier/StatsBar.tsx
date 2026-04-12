@@ -47,7 +47,11 @@ export function useAggregatedStats(chantierIds: bigint[]) {
       if (!chantier) continue
       if (chantier.status === ChantierStatus.Active) actifs++
       if (chantier.status === ChantierStatus.Active || chantier.status === ChantierStatus.Paused || chantier.status === ChantierStatus.InLitige) {
-        enEscrow += chantier.depositAmount
+        // Soustraire les jalons déjà libérés (Accepted ou ReservesLifted) du dépôt initial
+        const released = jalons
+          .filter(j => j.status === JalonStatus.Accepted || j.status === JalonStatus.ReservesLifted)
+          .reduce((sum, j) => sum + j.amount, 0n)
+        enEscrow += chantier.depositAmount - released
       }
       jalonsDone += countValidatedJalons(jalons)
       jalonsTotal += chantier.jalonCount
