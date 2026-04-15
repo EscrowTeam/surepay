@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useSignTypedData, useWriteContract, useWaitForTransactionReceipt, useReadContracts, useChainId } from 'wagmi'
-import { ESCROW_VAULT_ADDRESS, ESCROW_VAULT_ABI, TOKEN_ADDRESS, ERC20_PERMIT_ABI } from '@/lib/contracts'
+import { ESCROW_VAULT_ADDRESS, ESCROW_VAULT_ABI, TOKEN_ADDRESS, ERC20_PERMIT_ABI } from '@/lib/conttracts'
 
 // Deadline : 20 minutes dans le futur (standard DeFi)
 const PERMIT_DEADLINE_SEC = 20 * 60

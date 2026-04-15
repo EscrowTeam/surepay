@@ -237,6 +237,7 @@ contract EscrowVault is Ownable, ReentrancyGuard {
     /// @param name               Nom libre du chantier
     /// @param jalonDescriptions  Description de chaque jalon (max 5)
     /// @param jalonAmounts       Montant de chaque jalon
+    /// @param jalonDeadlines     Date de fin prévue de chaque jalon (timestamp Unix, informatif)
     /// @return chantierId        Identifiant unique du chantier créé
     function submitDevis(
         address particulier,
@@ -244,14 +245,15 @@ contract EscrowVault is Ownable, ReentrancyGuard {
         uint256 devisAmount,
         string calldata name,
         string[] calldata jalonDescriptions,
-        uint256[] calldata jalonAmounts
+        uint256[] calldata jalonAmounts,
+        uint256[] calldata jalonDeadlines
     ) external returns (uint256 chantierId) {
         // Validations
         if (!allowedTokens[token]) revert TokenNonAutorise(token);
         if (particulier == address(0)) revert AdresseZero();
 
         uint8 count = uint8(jalonDescriptions.length);
-        if (count == 0 || count > DataTypes.MAX_JALONS || jalonAmounts.length != count) {
+        if (count == 0 || count > DataTypes.MAX_JALONS || jalonAmounts.length != count || jalonDeadlines.length != count) {
             revert NombreJalonsInvalide(count);
         }
 
@@ -293,7 +295,8 @@ contract EscrowVault is Ownable, ReentrancyGuard {
                 artisanProofHash: bytes32(0),
                 clientProofHash: bytes32(0),
                 blockedAmount: 0,
-                penaltyAmount: 0
+                penaltyAmount: 0,
+                deadline: jalonDeadlines[i]
             });
         }
 

@@ -15,13 +15,14 @@ export function useSubmitDevis() {
     devisAmount: bigint,
     name: string,
     descriptions: string[],
-    amounts: bigint[]
+    amounts: bigint[],
+    deadlines: bigint[]
   ) {
     writeContract({
       address: ESCROW_VAULT_ADDRESS,
       abi: ESCROW_VAULT_ABI,
       functionName: 'submitDevis',
-      args: [particulier, token, devisAmount, name, descriptions, amounts],
+      args: [particulier, token, devisAmount, name, descriptions, amounts, deadlines],
     })
   }
 

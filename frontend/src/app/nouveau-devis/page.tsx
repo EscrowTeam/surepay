@@ -17,7 +17,7 @@ export default function NouveauDevisPage() {
   if (!isConnected) return null
 
   return (
-    <div className="container max-w-2xl mx-auto px-4 py-8 space-y-6">
+    <div className="container max-w-3xl mx-auto px-4 py-8 space-y-6">
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Nouveau devis</h1>

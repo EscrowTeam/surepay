@@ -17,6 +17,7 @@ const JALON_COMPONENTS = [
   { name: 'clientProofHash', type: 'bytes32' },
   { name: 'blockedAmount', type: 'uint256' },
   { name: 'penaltyAmount', type: 'uint256' },
+  { name: 'deadline', type: 'uint256' },
 ] as const
 
 export const ESCROW_VAULT_ABI = [
@@ -105,6 +106,7 @@ export const ESCROW_VAULT_ABI = [
       { name: 'name', type: 'string' },
       { name: 'jalonDescriptions', type: 'string[]' },
       { name: 'jalonAmounts', type: 'uint256[]' },
+      { name: 'jalonDeadlines', type: 'uint256[]' },
     ],
     outputs: [{ name: 'chantierId', type: 'uint256' }],
   },

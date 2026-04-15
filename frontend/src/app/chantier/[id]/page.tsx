@@ -4,7 +4,7 @@ import { use, useState } from 'react'
 import { useAccount } from 'wagmi'
 import {
   Loader2, CheckCircle2, AlertTriangle, ShieldOff, RotateCcw,
-  XCircle, Zap, Clock, Info
+  XCircle, Zap, Clock, Info, Calendar
 } from 'lucide-react'
 import { useChantier } from '@/hooks/useChantier'
 import { useJalonActions } from '@/hooks/useJalonActions'
@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { ChantierStatus, JalonStatus } from '@/types/contracts'
-import { formatToken, shortAddress, hashProof, timeUntilAutoValidation } from '@/lib/utils'
+import { formatToken, formatDeadline, shortAddress, hashProof, timeUntilAutoValidation } from '@/lib/utils'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -176,7 +176,21 @@ const { chantier, jalons, isLoading, refetch } = useChantier(chantierId)
                   </span>
                   <div>
                     <div className="text-sm font-medium">{jalon.description}</div>
-                    <div className="text-xs text-muted-foreground">{formatToken(jalon.amount)}</div>
+                    <div className="flex items-center gap-3 mt-0.5">
+                      <span className="text-xs text-muted-foreground">{formatToken(jalon.amount)}</span>
+                      {jalon.deadline > 0n && (
+                        <span className={`inline-flex items-center gap-1 text-xs ${
+                          jalon.deadline < BigInt(Math.floor(Date.now() / 1000)) &&
+                          jalon.status !== JalonStatus.Accepted &&
+                          jalon.status !== JalonStatus.ReservesLifted
+                            ? 'text-amber-400'
+                            : 'text-muted-foreground/60'
+                        }`}>
+                          <Calendar className="size-3" />
+                          {formatDeadline(jalon.deadline)}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div className="flex flex-col items-end gap-1">

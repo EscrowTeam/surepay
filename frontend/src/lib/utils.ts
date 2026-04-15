@@ -29,6 +29,16 @@ export function parseToken(value: string): bigint {
   return BigInt(Math.round(num * Math.pow(10, TOKEN_DECIMALS)))
 }
 
+// Formate un timestamp Unix (bigint) en date courte française — ex: "15 jan. 2026"
+export function formatDeadline(deadline: bigint): string {
+  if (!deadline) return ''
+  return new Date(Number(deadline) * 1000).toLocaleDateString('fr-FR', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
 // Durée restante avant auto-validation (retourne null si expirée)
 export function timeUntilAutoValidation(finishedAt: bigint): { expired: boolean; label: string } {
   const delay = 48 * 3600

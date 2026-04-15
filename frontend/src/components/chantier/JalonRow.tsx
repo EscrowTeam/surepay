@@ -1,8 +1,8 @@
 'use client'
 
-import { CheckCircle2, Clock, AlertTriangle, ShieldCheck, ShieldAlert, MinusCircle } from 'lucide-react'
+import { CheckCircle2, Clock, AlertTriangle, ShieldCheck, ShieldAlert, MinusCircle, Calendar } from 'lucide-react'
 import { Jalon, JalonStatus } from '@/types/contracts'
-import { formatToken, timeUntilAutoValidation } from '@/lib/utils'
+import { formatToken, formatDeadline, timeUntilAutoValidation } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { JalonStatusLabel } from './StatusBadge'
 
@@ -42,11 +42,23 @@ export function JalonRow({ jalon, index, isCurrent, role, chantierId, devisAmoun
         <span className="flex-shrink-0">{JALON_ICON[jalon.status]}</span>
         <div>
           <span className="text-sm text-foreground/90">{jalon.description}</span>
-          <div className="flex items-center gap-2 mt-0.5">
+          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
             <span className="text-xs text-muted-foreground">
               {pct !== null && <span className="text-muted-foreground/70">{pct}% — </span>}
               {formatToken(jalon.amount)}
             </span>
+            {jalon.deadline > 0n && (
+              <span className={`inline-flex items-center gap-1 text-xs ${
+                jalon.deadline < BigInt(Math.floor(Date.now() / 1000)) &&
+                jalon.status !== JalonStatus.Accepted &&
+                jalon.status !== JalonStatus.ReservesLifted
+                  ? 'text-amber-400'
+                  : 'text-muted-foreground/70'
+              }`}>
+                <Calendar className="size-3" />
+                {formatDeadline(jalon.deadline)}
+              </span>
+            )}
             {jalon.status === JalonStatus.Finished && autoVal && (
               <span className={`text-xs ${autoVal.expired ? 'text-emerald-400' : 'text-blue-400'}`}>
                 · {autoVal.label}

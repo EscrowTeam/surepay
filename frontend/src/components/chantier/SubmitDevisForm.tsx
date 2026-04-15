@@ -9,15 +9,22 @@ import { parseToken, formatToken } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
 interface JalonField {
   description: string
   amount: string
+  deadline: string
 }
 
-const DEFAULT_JALON: JalonField = { description: '', amount: '' }
+const DEFAULT_JALON: JalonField = { description: '', amount: '', deadline: '' }
+
+function dateToTimestamp(dateStr: string): bigint {
+  if (!dateStr) return 0n
+  // Interprétation en heure locale pour éviter le décalage UTC
+  return BigInt(Math.floor(new Date(dateStr + 'T00:00:00').getTime() / 1000))
+}
 
 export function SubmitDevisForm() {
   const router = useRouter()
@@ -27,9 +34,10 @@ export function SubmitDevisForm() {
   const { submitDevis, isPending, isSuccess, error } = useSubmitDevis()
 
   const totalAmount = jalons.reduce((sum, j) => sum + parseToken(j.amount), 0n)
+  const today = new Date().toISOString().split('T')[0]
   const allFilled = particulier.startsWith('0x') && particulier.length === 42 &&
     nomChantier.trim().length > 0 &&
-    jalons.every(j => j.description.trim() && parseToken(j.amount) > 0n)
+    jalons.every(j => j.description.trim() && parseToken(j.amount) > 0n && j.deadline !== '')
 
   function addJalon() {
     if (jalons.length < 5) setJalons([...jalons, { ...DEFAULT_JALON }])
@@ -52,7 +60,8 @@ export function SubmitDevisForm() {
       totalAmount,
       nomChantier.trim(),
       jalons.map(j => j.description),
-      jalons.map(j => parseToken(j.amount))
+      jalons.map(j => parseToken(j.amount)),
+      jalons.map(j => dateToTimestamp(j.deadline))
     )
   }
 
@@ -122,37 +131,43 @@ export function SubmitDevisForm() {
                 <span className="mt-2.5 text-xs font-medium text-muted-foreground w-5 text-right flex-shrink-0">
                   {idx + 1}
                 </span>
-                <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <div className="sm:col-span-2">
+                <div className="flex-1 flex items-end gap-2">
+                  <Input
+                    placeholder="Description du jalon"
+                    value={jalon.description}
+                    onChange={e => updateJalon(idx, 'description', e.target.value)}
+                    className="text-sm flex-1 min-w-0"
+                  />
+                  <Input
+                    placeholder="Montant EURC"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={jalon.amount}
+                    onChange={e => updateJalon(idx, 'amount', e.target.value)}
+                    className="text-sm w-32 flex-shrink-0"
+                  />
+                  <div className="flex flex-col gap-1 flex-shrink-0">
+                    <span className="text-xs text-muted-foreground px-1">Date fin de réalisation</span>
                     <Input
-                      placeholder="Description du jalon"
-                      value={jalon.description}
-                      onChange={e => updateJalon(idx, 'description', e.target.value)}
-                      className="text-sm"
+                      type="date"
+                      min={today}
+                      value={jalon.deadline}
+                      onChange={e => updateJalon(idx, 'deadline', e.target.value)}
+                      className="text-sm w-44"
                     />
                   </div>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Montant EURC"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={jalon.amount}
-                      onChange={e => updateJalon(idx, 'amount', e.target.value)}
-                      className="text-sm"
-                    />
-                    {jalons.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeJalon(idx)}
-                        className="flex-shrink-0 text-muted-foreground hover:text-destructive"
-                      >
-                        <Trash2 className="size-4" />
-                      </Button>
-                    )}
-                  </div>
+                  {jalons.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeJalon(idx)}
+                      className="flex-shrink-0 text-muted-foreground hover:text-destructive"
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardContent>

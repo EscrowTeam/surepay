@@ -44,6 +44,8 @@ describe("EscrowVault", () => {
   const PROOF = ethers.keccak256(ethers.toUtf8Bytes("preuve-v1"));
   const DESCS = ["Fondations", "Gros œuvre", "Couverture", "Second œuvre", "Finitions"];
   const MONTANTS = [eurc(2_000), eurc(2_000), eurc(2_000), eurc(2_000), eurc(2_000)];
+  // Deadlines fictives (1er jan 2030, timestamps fixes bien dans le futur)
+  const DEADLINES = [1893456000n, 1893456000n, 1893456000n, 1893456000n, 1893456000n];
 
   /**
    * Génère une signature EIP-2612 permit.
@@ -130,7 +132,8 @@ describe("EscrowVault", () => {
       DEVIS,
       "Rénovation appartement T3",
       DESCS,
-      MONTANTS
+      MONTANTS,
+      DEADLINES
     );
     const receipt = await tx.wait();
     const ev = receipt?.logs
@@ -187,7 +190,7 @@ describe("EscrowVault", () => {
 
     it("émet DevisSoumis", async () => {
       await expect(
-        vault.connect(artisan).submitDevis(particulier.address, await mockEURC.getAddress(), DEVIS, "Test", DESCS, MONTANTS)
+        vault.connect(artisan).submitDevis(particulier.address, await mockEURC.getAddress(), DEVIS, "Test", DESCS, MONTANTS, DEADLINES)
       ).to.emit(vault, "DevisSoumis");
     });
 
@@ -195,20 +198,20 @@ describe("EscrowVault", () => {
       const Fake = await ethers.getContractFactory("ERC20Mock");
       const fake = await Fake.deploy("Fake", "FAKE", 6);
       await expect(
-        vault.connect(artisan).submitDevis(particulier.address, await fake.getAddress(), DEVIS, "Test", DESCS, MONTANTS)
+        vault.connect(artisan).submitDevis(particulier.address, await fake.getAddress(), DEVIS, "Test", DESCS, MONTANTS, DEADLINES)
       ).to.be.revertedWithCustomError(vault, "TokenNonAutorise");
     });
 
     it("rejette si la somme des jalons ≠ devis", async () => {
       const mauvais = [eurc(1_000), eurc(2_000), eurc(2_000), eurc(2_000), eurc(2_000)];
       await expect(
-        vault.connect(artisan).submitDevis(particulier.address, await mockEURC.getAddress(), DEVIS, "Test", DESCS, mauvais)
+        vault.connect(artisan).submitDevis(particulier.address, await mockEURC.getAddress(), DEVIS, "Test", DESCS, mauvais, DEADLINES)
       ).to.be.revertedWithCustomError(vault, "SommeJalonsMismatch");
     });
 
     it("rejette avec 0 jalons", async () => {
       await expect(
-        vault.connect(artisan).submitDevis(particulier.address, await mockEURC.getAddress(), DEVIS, "Test", [], [])
+        vault.connect(artisan).submitDevis(particulier.address, await mockEURC.getAddress(), DEVIS, "Test", [], [], [])
       ).to.be.revertedWithCustomError(vault, "NombreJalonsInvalide");
     });
   });

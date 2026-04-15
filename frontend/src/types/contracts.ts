@@ -53,6 +53,7 @@ export interface Jalon {
   clientProofHash: `0x${string}`
   blockedAmount: bigint
   penaltyAmount: bigint
+  deadline: bigint
 }
 
 export interface TrustStats {

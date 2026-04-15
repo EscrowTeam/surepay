@@ -85,6 +85,8 @@ library DataTypes {
         uint256 blockedAmount;
         /// @dev Montant de pénalité déduit du paiement artisan
         uint256 penaltyAmount;
+        /// @dev Date de fin prévue de la réalisation (timestamp Unix, informatif)
+        uint256 deadline;
     }
 
     /// @notice Données d'un chantier
