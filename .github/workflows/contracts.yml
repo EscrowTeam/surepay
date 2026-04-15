@@ -1,4 +1,4 @@
-name: Contracts
+name: Tests Solidity
 
 on:
   push:
