@@ -21,7 +21,7 @@ interface IYieldProvider {
     /// @notice Deposit `amount` of `token` into the yield protocol.
     /// @dev The caller (EscrowVault) must have already transferred `amount` of
     ///      `token` to this contract before calling this function.
-    /// @param token ERC20 token address (USDC or EURC)
+    /// @param token ERC20 token address (USDC)
     /// @param amount Amount to deposit (in token decimals)
     function deposit(address token, uint256 amount) external;
 

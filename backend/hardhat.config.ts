@@ -46,5 +46,12 @@ export default defineConfig({
       url: configVariable("ARBITRUM_SEPOLIA_RPC_URL"),
       accounts: [configVariable("ARBITRUM_SEPOLIA_PRIVATE_KEY")],
     },
+    // Base Sepolia — réseau cible pour le déploiement avec AaveV3YieldProvider + MockUSDC
+    baseSepolia: {
+      type: "http",
+      chainType: "op",
+      url: configVariable("BASE_SEPOLIA_RPC_URL"),
+      accounts: [configVariable("BASE_SEPOLIA_PRIVATE_KEY")],
+    },
   },
 });

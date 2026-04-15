@@ -17,8 +17,8 @@ import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
  *   treasury     — adresse de la trésorerie (frais + yield)
  *   arbiter      — adresse de l'arbitre des litiges
  *   aavePool     — adresse du Pool Aave V3 (optionnel, si yield activé)
- *   eurcAddress  — adresse du token EURC
- *   aEurcAddress — adresse de l'aEURC Aave (optionnel)
+ *   usdcAddress  — adresse du token USDC
+ *   aUsdcAddress — adresse de l'aUSDC Aave (optionnel)
  *
  * Adresses Arbitrum Sepolia (début 2026) :
  *   Aave V3 Pool   : 0xBfC91D59fdAA134A4ED45f7B584cAf96D7792Eff
@@ -30,11 +30,11 @@ const TrustBTPModule = buildModule("TrustBTP", (m) => {
   const owner = m.getParameter("owner");
   const treasury = m.getParameter("treasury");
   const arbiter = m.getParameter("arbiter");
-  const eurcAddress = m.getParameter("eurcAddress");
+  const usdcAddress = m.getParameter("usdcAddress");
 
   // Paramètres optionnels pour le yield provider Aave
   const aavePool = m.getParameter("aavePool");
-  const aEurcAddress = m.getParameter("aEurcAddress");
+  const aUsdcAddress = m.getParameter("aUsdcAddress");
 
   // 1. Déploiement TrustScoreRegistry
   const trustScoreRegistry = m.contract("TrustScoreRegistry", [owner]);
@@ -67,9 +67,9 @@ const TrustBTPModule = buildModule("TrustBTP", (m) => {
     escrowVault,
   ]);
 
-  // Enregistrement du token EURC dans le yield provider
-  m.call(aaveYieldProvider, "registerToken", [eurcAddress, aEurcAddress], {
-    id: "registerEURC",
+  // Enregistrement du token USDC dans le yield provider
+  m.call(aaveYieldProvider, "registerToken", [usdcAddress, aUsdcAddress], {
+    id: "registerUSDC",
   });
 
   // Connexion du yield provider au vault
@@ -77,9 +77,9 @@ const TrustBTPModule = buildModule("TrustBTP", (m) => {
     id: "wireYieldProvider",
   });
 
-  // 7. Autorisation du token EURC dans le vault
-  m.call(escrowVault, "setAllowedToken", [eurcAddress, true], {
-    id: "allowEURC",
+  // 7. Autorisation du token USDC dans le vault
+  m.call(escrowVault, "setAllowedToken", [usdcAddress, true], {
+    id: "allowUSDC",
   });
 
   return { trustScoreRegistry, chantierNFT, escrowVault, aaveYieldProvider };

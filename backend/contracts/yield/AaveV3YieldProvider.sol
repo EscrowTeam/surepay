@@ -21,8 +21,8 @@ import {IAavePool, IAToken} from "./interfaces/IAavePool.sol";
 ///
 /// Arbitrum Sepolia addresses (set in constructor):
 ///   Aave V3 Pool proxy : 0xBfC91D59fdAA134A4ED45f7B584cAf96D7792Eff
+///   USDC               : 0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d
 ///   aUSDC              : 0x460b97BD498E1157530AEb3086301d5225b91216
-///   aEURC              : (no EURC on Sepolia — use mock in tests)
 contract AaveV3YieldProvider is IYieldProvider, Ownable {
     using SafeERC20 for IERC20;
 

@@ -139,7 +139,7 @@ export function SubmitDevisForm() {
                     className="text-sm flex-1 min-w-0"
                   />
                   <Input
-                    placeholder="Montant EURC"
+                    placeholder="Montant USDC"
                     type="number"
                     min="0"
                     step="0.01"
@@ -201,7 +201,7 @@ export function SubmitDevisForm() {
             </span>
           </div>
           <p className="text-xs text-muted-foreground pt-1">
-            Le client devra approuver ce montant en EURC avant de signer.
+            Le client devra approuver ce montant en USDC avant de signer.
           </p>
         </div>
       )}

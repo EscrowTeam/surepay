@@ -1,7 +1,8 @@
 'use client'
 
 import { useRouter, usePathname } from 'next/navigation'
-import { ArrowLeft, ShieldCheck } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
+import Image from 'next/image'
 import ConnectButton from './ConnectButton'
 
 export default function Header() {
@@ -23,12 +24,9 @@ export default function Header() {
           )}
           <button
             onClick={() => router.push('/')}
-            className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[oklch(0.82_0.15_175)] shadow-sm">
-              <ShieldCheck className="h-4 w-4 text-black" />
-            </div>
-            <span className="font-bold text-lg tracking-tight">Trust BTP</span>
+            <Image src="/Logo_TrustBTP.png" alt="Trust BTP" width={85} height={85}/>
           </button>
         </div>
         <ConnectButton />

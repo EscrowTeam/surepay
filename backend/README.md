@@ -58,7 +58,7 @@ Particulier      cancelChantier()    → Annulation avant 1er jalon (Cancelled)
 | Dépôt exigé | 110% du montant du devis |
 | Nombre de jalons | 1 à 5 (défini à la soumission, immuable) |
 | Somme des jalons | Doit être exactement égale au devis (100%) |
-| Token accepté | USDC uniquement (EURC prévu ultérieurement) |
+| Token accepté | USDC uniquement (6 décimales) |
 | Commission plateforme | 2% prélevés sur chaque jalon libéré |
 | Buffer (10% excédent) | Retourné au particulier à la clôture du chantier |
 
@@ -215,6 +215,6 @@ npx hardhat ignition deploy ignition/modules/TrustBTP.ts --network arbitrumSepol
 
 - [ ] EIP-2612 `permit` — `acceptDevisWithPermit()` pour approuver + déposer en 1 transaction
 - [ ] Paramétrage des pénalités (actuellement codées en dur)
-- [ ] Support EURC
+- [ ] Multi-token (EURC, DAI...)
 - [ ] 2ème provider de yield (Morpho)
 - [ ] Délais par jalon configurables (actuellement heuristique 7j/jalon)

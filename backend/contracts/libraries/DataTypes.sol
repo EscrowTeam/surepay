@@ -98,7 +98,7 @@ library DataTypes {
         address artisan;
         /// @dev Particulier — client destinataire du devis
         address particulier;
-        /// @dev Token ERC-20 utilisé (EURC uniquement pour l'instant)
+        /// @dev Token ERC-20 utilisé (USDC uniquement pour l'instant)
         address token;
         /// @dev Montant du devis convenu (100%) = somme des jalons
         uint256 devisAmount;

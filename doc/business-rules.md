@@ -111,7 +111,7 @@ DevisSubmitted
 |---|---|
 | Montant déposé | **110%** du montant du devis (`DEPOSIT_RATIO_BPS = 11_000`) |
 | Composition | 100% = somme des jalons (devis) + 10% = buffer de sécurité |
-| Token accepté | **USDC uniquement** (6 décimales) — EURC prévu ultérieurement |
+| Token accepté | **USDC uniquement** (6 décimales) — autres stablecoins prévus ultérieurement |
 | Moment du dépôt | Lors de l'appel à `acceptDevis()` par le particulier |
 | Prérequis | Le particulier doit avoir approuvé (`approve`) le vault pour `depositAmount` avant |
 

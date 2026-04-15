@@ -29,7 +29,7 @@ export default function NotConnected() {
           </h1>
           <p className="text-lg text-muted-foreground max-w-xl mx-auto">
             Dépôt, jalons, validation, libération — chaque étape est automatisée,
-            traçable et transparente. Pour les chantiers de moins de 15&nbsp;000&nbsp;€.
+            traçable et transparente.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
             <AppKitButton />

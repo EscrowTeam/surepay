@@ -49,7 +49,7 @@ interface IChantierNFT {
     /// @param name               Nom libre du chantier
     /// @param artisan            Adresse de l'artisan
     /// @param particulier        Adresse du particulier
-    /// @param token              Token de paiement (EURC)
+    /// @param token              Token de paiement (USDC)
     /// @param devisAmount        Montant du devis (100%)
     /// @param depositAmount      Montant déposé (110%)
     /// @param jalonDescriptions  Descriptions immuables des jalons

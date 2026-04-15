@@ -41,11 +41,11 @@ export function OwnerDashboard() {
       {/* Stats globales */}
       <div className="flex gap-3 flex-wrap">
         <StatCard
-          label="Frais plateforme accumulés (EURC)"
+          label="Frais plateforme accumulés (USDC)"
           value={formatToken(platformFeesTotal)}
         />
         <StatCard
-          label="Yield DeFi disponible (EURC)"
+          label="Yield DeFi disponible (USDC)"
           value={formatToken(yieldTotal)}
         />
         <StatCard
