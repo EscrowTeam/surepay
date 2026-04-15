@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useSignTypedData, useWriteContract, useWaitForTransactionReceipt, useReadContracts, useChainId } from 'wagmi'
-import { ESCROW_VAULT_ADDRESS, ESCROW_VAULT_ABI, TOKEN_ADDRESS, ERC20_PERMIT_ABI } from '@/lib/conttracts'
+import { ESCROW_VAULT_ADDRESS, ESCROW_VAULT_ABI, TOKEN_ADDRESS, ERC20_PERMIT_ABI } from '@/lib/contracts'
 
 // Deadline : 20 minutes dans le futur (standard DeFi)
 const PERMIT_DEADLINE_SEC = 20 * 60
@@ -36,7 +36,7 @@ export function useAcceptDevis(
 
   const nonce = permitData?.[0]?.result as bigint | undefined
   const tokenName = permitData?.[1]?.result as string | undefined
-  // EURC Circle Arbitrum Sepolia utilise version "2", mock OZ v5 utilise "1"
+  // USDC Circle Arbitrum Sepolia utilise version "2", mock OZ v5 utilise "1"
   const tokenVersion = (permitData?.[2]?.result as string | undefined) ?? '1'
 
   const { signTypedData, isPending: isSigning, error: signError } = useSignTypedData()
@@ -108,12 +108,15 @@ export function useAcceptDevis(
   }
 
   useEffect(() => {
-    if (isConfirmed && step === 'sending') {
+    if (!isConfirmed || step !== 'sending') return
+    // Planifier les mises à jour d'état après le cycle de rendu courant
+    const id = setTimeout(() => {
       setStep('done')
       setPermitSig(null)
       onSuccess?.()
-    }
-  }, [isConfirmed]) // eslint-disable-line react-hooks/exhaustive-deps
+    }, 0)
+    return () => clearTimeout(id)
+  }, [isConfirmed, step, onSuccess])
 
   return {
     sign,
