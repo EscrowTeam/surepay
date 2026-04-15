@@ -513,10 +513,7 @@ contract EscrowVault is Ownable, ReentrancyGuard {
 
         // La pénalité est versée immédiatement à la plateforme
         platformFees[c.token] += penalite;
-        if (c.yieldOptIn && address(yieldProvider) != address(0) && penalite > 0) {
-            yieldProvider.withdraw(c.token, penalite, address(this));
-            yieldPrincipal[c.token] -= penalite;
-        }
+        if (c.yieldOptIn) yieldPrincipal[c.token] -= penalite;
 
         emit JalonAccepteAvecReserves(chantierId, idx, false, clientProofHash);
     }
@@ -703,12 +700,9 @@ contract EscrowVault is Ownable, ReentrancyGuard {
             platformFees[c.token] += buffer;
             penalitePlateforme     += buffer;
 
-            // Le buffer est toujours en yield si yieldOptIn — le rapatrier vers
-            // le vault pour que collecterFrais() puisse le transférer.
-            if (c.yieldOptIn && address(yieldProvider) != address(0) && buffer > 0) {
-                yieldProvider.withdraw(c.token, buffer, address(this));
-                yieldPrincipal[c.token] -= buffer;
-            }
+            // Le buffer est toujours en yield si yieldOptIn — le décrémenter
+            // pour que la comptabilité yieldPrincipal reste cohérente.
+            if (c.yieldOptIn) yieldPrincipal[c.token] -= buffer;
 
             // Bloquer le retour du buffer à la clôture du chantier.
             c.bufferForfeited = true;
@@ -830,11 +824,7 @@ contract EscrowVault is Ownable, ReentrancyGuard {
 
         platformFees[c.token] += frais;
         _transferDepuisSequestre(c.token, c.artisan, net, c.yieldOptIn);
-        // Si les fonds sont dans Aave, rapatrier aussi les frais vers le vault
-        // pour que collecterFrais() puisse les transférer à la trésorerie.
-        if (c.yieldOptIn && address(yieldProvider) != address(0) && frais > 0) {
-            yieldProvider.withdraw(c.token, frais, address(this));
-        }
+        
         if (c.yieldOptIn) yieldPrincipal[c.token] -= montantBrut;
 
         idx; // silence warning
