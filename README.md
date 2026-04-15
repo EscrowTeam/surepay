@@ -1,8 +1,8 @@
 # Surepay Construction
 
-[![CI](https://img.shields.io/github/actions/workflow/status/EscrowTeam/surepay/contracts.yml?branch=main&label=CI&logo=github&logoColor=white)](https://github.com/EscrowTeam/surepay/actions/workflows/contracts.yml)
-[![Build](https://img.shields.io/github/actions/workflow/status/EscrowTeam/surepay/frontend.yml?branch=main&label=build&logo=nextdotjs&logoColor=white)](https://github.com/EscrowTeam/surepay/actions/workflows/frontend.yml)
-[![Tests](https://img.shields.io/github/actions/workflow/status/EscrowTeam/surepay/contracts.yml?branch=main&label=tests&logo=mocha&logoColor=brown)](https://github.com/EscrowTeam/surepay/actions/workflows/contracts.yml)
+![CI](https://github.com/EscrowTeam/surepay/actions/workflows/contracts.yml/badge.svg?branch=main)
+![Build](https://github.com/EscrowTeam/surepay/actions/workflows/frontend.yml/badge.svg?branch=main)
+![Tests](https://github.com/EscrowTeam/surepay/actions/workflows/contracts.yml/badge.svg?branch=main&label=tests)
 [![Vercel](https://img.shields.io/github/deployments/EscrowTeam/surepay/Production?label=vercel&logo=vercel&logoColor=white)](https://github.com/EscrowTeam/surepay/deployments)
 
 Plateforme Web3 de sécurisation et d'orchestration des paiements de travaux.
