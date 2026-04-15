@@ -342,7 +342,7 @@ export const ERC20_ABI = [
   },
 ] as const
 
-// EIP-2612 permit ABI — pour EURC (Circle) et ERC20Permit (OZ v5)
+// EIP-2612 permit ABI — pour USDC (Circle) et ERC20Permit (OZ v5)
 export const ERC20_PERMIT_ABI = [
   {
     name: 'nonces',
@@ -390,7 +390,7 @@ export const YIELD_PROVIDER_ABI = [
   },
 ] as const
 
-// EURC : 6 décimales
+// USDC : 6 décimales
 export const TOKEN_DECIMALS = 6
 export const AUTO_VALIDATE_DELAY_SEC = 48 * 3600 // 48h en secondes
 export const DEPOSIT_RATIO = 1.1 // 110%
