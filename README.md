@@ -1,5 +1,11 @@
 # Surepay Construction
 
+[![CI](https://img.shields.io/github/actions/workflow/status/EscrowTeam/surepay/contracts.yml?branch=main&label=CI&logo=github&logoColor=white)](https://github.com/EscrowTeam/surepay/actions/workflows/contracts.yml)
+[![Build](https://img.shields.io/github/actions/workflow/status/EscrowTeam/surepay/frontend.yml?branch=main&label=build&logo=nextdotjs&logoColor=white)](https://github.com/EscrowTeam/surepay/actions/workflows/frontend.yml)
+[![Tests](https://img.shields.io/github/actions/workflow/status/EscrowTeam/surepay/contracts.yml?branch=main&label=tests&logo=mocha&logoColor=brown)](https://github.com/EscrowTeam/surepay/actions/workflows/contracts.yml)
+[![Coverage](https://codecov.io/gh/EscrowTeam/surepay/branch/main/graph/badge.svg)](https://codecov.io/gh/EscrowTeam/surepay)
+[![Vercel](https://img.shields.io/github/deployments/EscrowTeam/surepay/Production?label=vercel&logo=vercel&logoColor=white)](https://github.com/EscrowTeam/surepay/deployments)
+
 Plateforme Web3 de sécurisation et d'orchestration des paiements de travaux.
 
 ## Vue d'ensemble
@@ -7,10 +13,10 @@ Plateforme Web3 de sécurisation et d'orchestration des paiements de travaux.
 Surepay combine trois mécanismes :
 
 1. **Escrow à jalons** — les fonds du client sont bloqués et libérés progressivement à chaque étape validée du chantier.
-2. **Yield opt-in (Morpho)** — si le client l'accepte, les fonds idle sont déployés sur Morpho (ERC-4626) en EURC. Le vault reçoit des shares Morpho ; le client accumule des crédits travaux en échange.
-3. **Lending artisan (CDP)** — les fonds en escrow servent de collatéral. L'artisan peut emprunter des EURC pour financer ses achats de matériaux avant le déblocage du premier jalon.
+2. **Yield opt-in (Morpho)** — si le client l'accepte, les fonds idle sont déployés sur Morpho (ERC-4626) en USDC. Le vault reçoit des shares Morpho ; le client accumule des crédits travaux en échange.
+3. **Lending artisan (CDP)** — les fonds en escrow servent de collatéral. L'artisan peut emprunter des USDC pour financer ses achats de matériaux avant le déblocage du premier jalon.
 
-**Stablecoin unique : EURC (Circle)**
+**Stablecoin unique : USDC (Circle)**
 
 ---
 
@@ -25,7 +31,7 @@ surepay/
 │   │   ├── nft/            # ChantierNFT (ERC-5192 soulbound)
 │   │   ├── defi/           # YieldVault, LendingManager + interfaces
 │   │   ├── dispute/        # DisputeResolver (3 niveaux)
-│   │   └── mocks/          # MockEURC, MockMorpho pour les tests
+│   │   └── mocks/          # MockUSDC, MockMorpho pour les tests
 │   ├── test/
 │   │   ├── unit/           # Tests unitaires par contrat
 │   │   └── integration/    # Tests fork Arbitrum mainnet
@@ -42,32 +48,32 @@ surepay/
 | Contrat | Rôle | Phase |
 |---|---|---|
 | `SurepayAccessControl` | KYC whitelist + rôles (CLIENT, ARTISAN, MEDIATOR, ARBITRATOR, BACKEND, ADMIN) | 1 |
-| `EscrowVault` | Dépôt EURC, jalons, validation, libération, protocol fee 2% | 1 |
+| `EscrowVault` | Dépôt USDC, jalons, validation, libération, protocol fee 2% | 1 |
 | `ChantierNFT` | ERC-5192 soulbound — dossier probatoire du chantier | 1 |
 | `DisputeResolver` | Litiges 3 niveaux : amiable (15j) → médiation (30j) → arbitrage (21j) | 1 |
-| `YieldVault` | Opt-in client — déploiement EURC sur Morpho ERC-4626, crédits travaux | 2 |
-| `LendingManager` | CDP artisan — collatéral escrow → emprunt EURC matériaux via Morpho | 2 |
+| `YieldVault` | Opt-in client — déploiement USDC sur Morpho ERC-4626, crédits travaux | 2 |
+| `LendingManager` | CDP artisan — collatéral escrow → emprunt USDC matériaux via Morpho | 2 |
 
 ---
 
 ## Architecture des flux (cas nominal)
 
 ```
-Client (EURC)                                    Artisan
+Client (USDC)                                    Artisan
      │                                               │
      │ depositFunds(chantierId)                       │ depositCaution(chantierId)
      ▼                                               ▼
 ┌─────────────────── EscrowVault ──────────────────────┐
-│  Fonds ségrégués par chantier (EURC)                 │
+│  Fonds ségrégués par chantier (USDC)                 │
 │  Jalons : EN_ATTENTE → PREUVE_SOUMISE → PAYE         │
 │       ↓ opt-in client                                │
 │  YieldVault → Morpho (shares ERC-4626)               │
 │       ↓ collatéral artisan                           │
-│  LendingManager → emprunt EURC → fournisseurs        │
+│  LendingManager → emprunt USDC → fournisseurs        │
 └──────────────────────────────────────────────────────┘
      │ validateMilestone()                             │
      ▼                                               ▼
-  release EURC artisan (- 2% fee)            remboursement emprunt auto
+  release USDC artisan (- 2% fee)            remboursement emprunt auto
      │
   ChantierNFT mis à jour (soulbound)
 ```
