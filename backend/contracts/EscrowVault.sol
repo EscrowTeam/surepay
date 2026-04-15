@@ -31,7 +31,7 @@ import {IChantierNFT} from "./interfaces/IChantierNFT.sol";
 ///       - Réserves majeures      → acceptJalonWithMajorReserves() [pause]
 ///   4. Clôture : buffer 10% retourné au particulier + mise à jour Trust Score
 ///
-/// Token supporté : USDC uniquement (EURC prévu dans une version future)
+/// Token supporté : EURC uniquement
 ///
 contract EscrowVault is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -52,7 +52,7 @@ contract EscrowVault is Ownable, ReentrancyGuard {
     /// @notice Trésorerie qui perçoit les frais et le yield
     address public treasury;
 
-    /// @notice Tokens ERC-20 autorisés (USDC = true)
+    /// @notice Tokens ERC-20 autorisés (EURC = true)
     mapping(address token => bool) public allowedTokens;
 
     // --- Stockage des chantiers ---
@@ -185,7 +185,7 @@ contract EscrowVault is Ownable, ReentrancyGuard {
     // Administration
     // =========================================================================
 
-    /// @notice Autorise ou retire un token ERC-20 (USDC)
+    /// @notice Autorise ou retire un token ERC-20 (EURC)
     function setAllowedToken(address token, bool autorise) external onlyOwner {
         if (token == address(0)) revert AdresseZero();
         allowedTokens[token] = autorise;
@@ -232,7 +232,7 @@ contract EscrowVault is Ownable, ReentrancyGuard {
     ///         Le devis est figé dès la soumission (immuable).
     ///
     /// @param particulier        Adresse du client
-    /// @param token              Token de paiement (USDC)
+    /// @param token              Token de paiement (EURC)
     /// @param devisAmount        Montant total du devis (= somme des jalons)
     /// @param name               Nom libre du chantier
     /// @param jalonDescriptions  Description de chaque jalon (max 5)

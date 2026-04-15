@@ -2,7 +2,7 @@
 
 import { useChantier } from '@/hooks/useChantier'
 import { ChantierStatus, JalonStatus } from '@/types/contracts'
-import { formatUsdc, countValidatedJalons } from '@/lib/utils'
+import { formatToken, countValidatedJalons } from '@/lib/utils'
 import { useMemo } from 'react'
 
 // Calcule les stats agrégées depuis une liste de chantierIds chargés
@@ -72,7 +72,7 @@ export function StatsBar({ chantierIds }: StatsBarProps) {
   return (
     <div className="flex gap-3 flex-wrap">
       <StatCard label="Chantiers actifs" value={actifs} />
-      <StatCard label="Fonds en escrow" value={formatUsdc(enEscrow)} />
+      <StatCard label="Fonds en escrow" value={formatToken(enEscrow)} />
       <StatCard label="Jalons validés" value={`${jalonsDone} / ${jalonsTotal}`} />
       <StatCard label="Litiges en cours" value={litiges} alert={litiges > 0} />
     </div>

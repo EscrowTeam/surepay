@@ -1,19 +1,19 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
-import { USDC_DECIMALS } from "./contracts"
+import { TOKEN_DECIMALS } from "./contracts"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-// Formate un montant bigint USDC (6 décimales) en string lisible
-export function formatUsdc(amount: bigint, withSymbol = true): string {
-  const value = Number(amount) / Math.pow(10, USDC_DECIMALS)
+// Formate un montant bigint EURC (6 décimales) en string lisible
+export function formatToken(amount: bigint, withSymbol = true): string {
+  const value = Number(amount) / Math.pow(10, TOKEN_DECIMALS)
   const formatted = value.toLocaleString('fr-FR', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   })
-  return withSymbol ? `${formatted} USDC` : formatted
+  return withSymbol ? `${formatted} EURC` : formatted
 }
 
 // Tronque une adresse Ethereum : 0x1234...5678
@@ -22,11 +22,11 @@ export function shortAddress(address: string): string {
   return `${address.slice(0, 6)}...${address.slice(-4)}`
 }
 
-// Convertit un montant USDC en chaîne vers bigint (6 décimales)
-export function parseUsdc(value: string): bigint {
+// Convertit un montant EURC en chaîne vers bigint (6 décimales)
+export function parseToken(value: string): bigint {
   const num = parseFloat(value.replace(',', '.'))
   if (isNaN(num) || num < 0) return 0n
-  return BigInt(Math.round(num * Math.pow(10, USDC_DECIMALS)))
+  return BigInt(Math.round(num * Math.pow(10, TOKEN_DECIMALS)))
 }
 
 // Durée restante avant auto-validation (retourne null si expirée)

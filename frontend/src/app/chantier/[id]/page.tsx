@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { ChantierStatus, JalonStatus } from '@/types/contracts'
-import { formatUsdc, shortAddress, hashProof, timeUntilAutoValidation } from '@/lib/utils'
+import { formatToken, shortAddress, hashProof, timeUntilAutoValidation } from '@/lib/utils'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -120,10 +120,10 @@ const { chantier, jalons, isLoading, refetch } = useChantier(chantierId)
                   ? 'text-sky-300'
                   : 'text-muted-foreground'
             }`}>
-              {formatUsdc(chantier.devisAmount)}
+              {formatToken(chantier.devisAmount)}
             </div>
             <div className="text-xs text-muted-foreground">
-              Dépôt : {formatUsdc(chantier.depositAmount)}
+              Dépôt : {formatToken(chantier.depositAmount)}
             </div>
           </div>
         </div>
@@ -176,7 +176,7 @@ const { chantier, jalons, isLoading, refetch } = useChantier(chantierId)
                   </span>
                   <div>
                     <div className="text-sm font-medium">{jalon.description}</div>
-                    <div className="text-xs text-muted-foreground">{formatUsdc(jalon.amount)}</div>
+                    <div className="text-xs text-muted-foreground">{formatToken(jalon.amount)}</div>
                   </div>
                 </div>
                 <div className="flex flex-col items-end gap-1">
@@ -188,7 +188,7 @@ const { chantier, jalons, isLoading, refetch } = useChantier(chantierId)
                   )}
                   {jalon.blockedAmount > 0n && (
                     <span className="text-xs text-amber-400">
-                      {formatUsdc(jalon.blockedAmount)} bloqué
+                      {formatToken(jalon.blockedAmount)} bloqué
                     </span>
                   )}
                 </div>
@@ -206,7 +206,7 @@ const { chantier, jalons, isLoading, refetch } = useChantier(chantierId)
           <ActionCard title="Devis en attente de signature" icon={<Info className="size-5 text-blue-400" />}>
             <p className="text-sm text-muted-foreground mb-4">
               L'artisan a soumis ce devis. Signez l'autorisation (sans gas), puis déposez{' '}
-              <strong>{formatUsdc(depositAmount)}</strong> (110% du montant) en une seule transaction.
+              <strong>{formatToken(depositAmount)}</strong> (110% du montant) en une seule transaction.
             </p>
             <div className="flex items-center gap-2 mb-5">
               <input
@@ -254,7 +254,7 @@ const { chantier, jalons, isLoading, refetch } = useChantier(chantierId)
                   className="bg-[oklch(0.82_0.15_175)] text-black hover:bg-[oklch(0.75_0.15_175)] gap-2"
                 >
                   {isPending && <Loader2 className="size-4 animate-spin" />}
-                  2. Déposer {formatUsdc(depositAmount)}
+                  2. Déposer {formatToken(depositAmount)}
                 </Button>
               )}
               <Button
@@ -281,7 +281,7 @@ const { chantier, jalons, isLoading, refetch } = useChantier(chantierId)
         {role === 'artisan' &&
           chantier.status === ChantierStatus.Active &&
           currentJalon?.status === JalonStatus.Pending && (
-          <ActionCard title={`Demander le paiement — Jalon ${chantier.currentJalonIndex + 1} · ${formatUsdc(currentJalon?.amount ?? 0n)}`} icon={<CheckCircle2 className="size-5 text-[oklch(0.82_0.15_175)]" />}>
+          <ActionCard title={`Demander le paiement — Jalon ${chantier.currentJalonIndex + 1} · ${formatToken(currentJalon?.amount ?? 0n)}`} icon={<CheckCircle2 className="size-5 text-[oklch(0.82_0.15_175)]" />}>
             <p className="text-sm text-muted-foreground mb-3">
               Déclarez ce jalon terminé. Le client a <strong className="text-foreground/80">48h</strong> pour valider — sans réponse, le paiement est libéré automatiquement.
             </p>
@@ -383,9 +383,9 @@ const { chantier, jalons, isLoading, refetch } = useChantier(chantierId)
               Le particulier a posé des réserves mineures. Si vous acceptez :
             </p>
             <ul className="text-sm text-muted-foreground mb-4 space-y-1">
-              <li>• Vous recevez immédiatement {formatUsdc(currentJalon.amount - currentJalon.blockedAmount - currentJalon.penaltyAmount)} (87%)</li>
-              <li>• {formatUsdc(currentJalon.blockedAmount)} resteront bloqués jusqu'à levée des réserves</li>
-              <li>• {formatUsdc(currentJalon.penaltyAmount)} de pénalité conservés par la plateforme</li>
+              <li>• Vous recevez immédiatement {formatToken(currentJalon.amount - currentJalon.blockedAmount - currentJalon.penaltyAmount)} (87%)</li>
+              <li>• {formatToken(currentJalon.blockedAmount)} resteront bloqués jusqu'à levée des réserves</li>
+              <li>• {formatToken(currentJalon.penaltyAmount)} de pénalité conservés par la plateforme</li>
             </ul>
             <div className="flex gap-2">
               <Button
@@ -414,7 +414,7 @@ const { chantier, jalons, isLoading, refetch } = useChantier(chantierId)
           currentJalon?.status === JalonStatus.PaidWithReserves && (
           <ActionCard title="Lever les réserves" icon={<CheckCircle2 className="size-5 text-emerald-400" />}>
             <p className="text-sm text-muted-foreground mb-4">
-              L'artisan a corrigé les points soulevés. En levant les réserves, vous libérez les {formatUsdc(currentJalon.blockedAmount)} bloqués.
+              L'artisan a corrigé les points soulevés. En levant les réserves, vous libérez les {formatToken(currentJalon.blockedAmount)} bloqués.
             </p>
             <Button
               onClick={() => jalonActions.lifterReserves(chantierId)}
@@ -528,8 +528,8 @@ const { chantier, jalons, isLoading, refetch } = useChantier(chantierId)
                 {currentJalon && (
                   <div className="rounded-lg bg-white/[0.03] border border-border/30 px-4 py-3 text-xs text-muted-foreground space-y-1">
                     <p className="font-medium text-foreground/70 mb-2">Récapitulatif de la décision</p>
-                    <p>· Retenue plateforme : <span className="text-foreground">{formatUsdc(currentJalon.amount * BigInt(blockedBps) / 10000n)}</span></p>
-                    <p>· Pénalité : <span className="text-foreground">{formatUsdc(currentJalon.amount * BigInt(penaltyBps) / 10000n)}</span></p>
+                    <p>· Retenue plateforme : <span className="text-foreground">{formatToken(currentJalon.amount * BigInt(blockedBps) / 10000n)}</span></p>
+                    <p>· Pénalité : <span className="text-foreground">{formatToken(currentJalon.amount * BigInt(penaltyBps) / 10000n)}</span></p>
                     <p>· Partie en tort perd : <span className="text-red-400">{((Number(blockedBps) + Number(penaltyBps)) / 100).toFixed(1)}%</span></p>
                   </div>
                 )}
@@ -559,7 +559,7 @@ const { chantier, jalons, isLoading, refetch } = useChantier(chantierId)
           currentJalon?.status === JalonStatus.Pending && (
           <ActionCard title="Annuler le chantier" icon={<XCircle className="size-5 text-red-400" />}>
             <p className="text-sm text-muted-foreground mb-4">
-              L'artisan n'a pas encore démarré. En annulant, il reçoit le montant du 1er jalon ({formatUsdc(jalons[0]?.amount ?? 0n)})
+              L'artisan n'a pas encore démarré. En annulant, il reçoit le montant du 1er jalon ({formatToken(jalons[0]?.amount ?? 0n)})
               en compensation et vous récupérez le reste.
             </p>
             <Button

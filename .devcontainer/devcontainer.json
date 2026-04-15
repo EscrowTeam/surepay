@@ -20,5 +20,6 @@
   "workspaceFolder": "/workspaces/surepay",
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/surepay,type=bind",  
   // "postCreateCommand": "npm install"
-  "postCreateCommand": "curl -fsSL https://claude.ai/install.sh | bash"
+  "postCreateCommand": "curl -fsSL https://claude.ai/install.sh | bash",
+  "postStartCommand": "rm -rf cache artifacts .hardhat"
 }

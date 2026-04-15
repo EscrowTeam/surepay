@@ -159,7 +159,7 @@ contract ChantierNFT is IChantierNFT, ERC721, Ownable {
             '{"trait_type":"Nom","value":"', d.name, '"},',
             '{"trait_type":"Artisan","value":"', Strings.toHexString(uint256(uint160(d.artisan)), 20), '"},',
             '{"trait_type":"Particulier","value":"', Strings.toHexString(uint256(uint160(d.particulier)), 20), '"},',
-            '{"trait_type":"Montant devis (USDC)","value":"', (d.devisAmount / 1e6).toString(), '"},',
+            '{"trait_type":"Montant devis (EURC)","value":"', (d.devisAmount / 1e6).toString(), '"},',
             '{"trait_type":"Nombre de jalons","value":"', uint256(d.jalonCount).toString(), '"}',
             '],"jalons":', _buildJalonsJson(tokenId, d.jalonCount),
             "}"

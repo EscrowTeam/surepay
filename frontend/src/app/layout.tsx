@@ -19,7 +19,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="fr" className={cn('font-sans dark', geist.variable)}>
-      <body>
+      <body suppressHydrationWarning>
         <ContextProvider cookies={cookies}>
           <Layout>{children}</Layout>
         </ContextProvider>

@@ -5,7 +5,7 @@
 export const ESCROW_VAULT_ADDRESS = (process.env.NEXT_PUBLIC_ESCROW_VAULT_ADDRESS ?? '0x0000000000000000000000000000000000000000') as `0x${string}`
 export const CHANTIER_NFT_ADDRESS = (process.env.NEXT_PUBLIC_CHANTIER_NFT_ADDRESS ?? '0x0000000000000000000000000000000000000000') as `0x${string}`
 export const TRUST_SCORE_REGISTRY_ADDRESS = (process.env.NEXT_PUBLIC_TRUST_SCORE_REGISTRY_ADDRESS ?? '0x0000000000000000000000000000000000000000') as `0x${string}`
-export const USDC_ADDRESS = (process.env.NEXT_PUBLIC_USDC_ADDRESS ?? '0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d') as `0x${string}`
+export const TOKEN_ADDRESS = (process.env.NEXT_PUBLIC_TOKEN_ADDRESS ?? '0x0000000000000000000000000000000000000000') as `0x${string}`
 
 // Composant Jalon (tuple) — réutilisé dans plusieurs fonctions ABI
 const JALON_COMPONENTS = [
@@ -340,7 +340,7 @@ export const ERC20_ABI = [
   },
 ] as const
 
-// EIP-2612 permit ABI — pour USDC (Circle) et ERC20Permit (OZ v5)
+// EIP-2612 permit ABI — pour EURC (Circle) et ERC20Permit (OZ v5)
 export const ERC20_PERMIT_ABI = [
   {
     name: 'nonces',
@@ -388,7 +388,7 @@ export const YIELD_PROVIDER_ABI = [
   },
 ] as const
 
-// USDC : 6 décimales
-export const USDC_DECIMALS = 6
+// EURC : 6 décimales
+export const TOKEN_DECIMALS = 6
 export const AUTO_VALIDATE_DELAY_SEC = 48 * 3600 // 48h en secondes
 export const DEPOSIT_RATIO = 1.1 // 110%

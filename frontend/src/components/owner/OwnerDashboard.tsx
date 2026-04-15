@@ -2,9 +2,9 @@
 
 import { useRouter } from 'next/navigation'
 import { Loader2, ShieldCheck, ShieldOff, ExternalLink } from 'lucide-react'
-import { useOwnerDashboard } from '@/hooks/useOwnerDashboard'
+import { useOwnerDashboard, LitigeChantierRow } from '@/hooks/useOwnerDashboard'
 import { TokenURIModal } from './TokenURIModal'
-import { formatUsdc, shortAddress } from '@/lib/utils'
+import { formatToken, shortAddress } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 
 function StatCard({ label, value, alert }: { label: string; value: string; alert?: boolean }) {
@@ -41,12 +41,12 @@ export function OwnerDashboard() {
       {/* Stats globales */}
       <div className="flex gap-3 flex-wrap">
         <StatCard
-          label="Frais plateforme accumulés (USDC)"
-          value={formatUsdc(platformFeesTotal)}
+          label="Frais plateforme accumulés (EURC)"
+          value={formatToken(platformFeesTotal)}
         />
         <StatCard
-          label="Yield DeFi disponible (USDC)"
-          value={formatUsdc(yieldTotal)}
+          label="Yield DeFi disponible (EURC)"
+          value={formatToken(yieldTotal)}
         />
         <StatCard
           label="Chantiers terminés"
@@ -97,7 +97,7 @@ export function OwnerDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {litigeChantiers.map((c, i) => (
+                {litigeChantiers.map((c: LitigeChantierRow, i: number) => (
                   <tr
                     key={c.id.toString()}
                     className={`border-b border-border/30 last:border-0 ${i % 2 === 0 ? '' : 'bg-muted/10'}`}
@@ -120,7 +120,7 @@ export function OwnerDashboard() {
                       {shortAddress(c.particulier)}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums">
-                      {formatUsdc(c.devisAmount)}
+                      {formatToken(c.devisAmount)}
                     </td>
                     <td className="px-4 py-3 text-center text-muted-foreground text-xs">
                       Jalon {c.jalonIndex + 1}
@@ -185,10 +185,10 @@ export function OwnerDashboard() {
                       {c.name || '—'}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums">
-                      {formatUsdc(c.devisAmount)}
+                      {formatToken(c.devisAmount)}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums text-[oklch(0.82_0.15_175)]">
-                      {formatUsdc(c.platformFees)}
+                      {formatToken(c.platformFees)}
                     </td>
                     <td className="px-4 py-3 text-center text-muted-foreground text-xs">
                       {formatDate(c.completedAt)}

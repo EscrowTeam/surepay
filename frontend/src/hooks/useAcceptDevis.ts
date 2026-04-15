@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useSignTypedData, useWriteContract, useWaitForTransactionReceipt, useReadContracts, useChainId } from 'wagmi'
-import { ESCROW_VAULT_ADDRESS, ESCROW_VAULT_ABI, USDC_ADDRESS, ERC20_PERMIT_ABI } from '@/lib/contracts'
+import { ESCROW_VAULT_ADDRESS, ESCROW_VAULT_ABI, TOKEN_ADDRESS, ERC20_PERMIT_ABI } from '@/lib/contracts'
 
 // Deadline : 20 minutes dans le futur (standard DeFi)
 const PERMIT_DEADLINE_SEC = 20 * 60
@@ -27,16 +27,16 @@ export function useAcceptDevis(
   // Lecture du nonce et du nom du token (domaine EIP-712)
   const { data: permitData } = useReadContracts({
     contracts: [
-      { address: USDC_ADDRESS, abi: ERC20_PERMIT_ABI, functionName: 'nonces', args: [walletAddress ?? '0x0'] },
-      { address: USDC_ADDRESS, abi: ERC20_PERMIT_ABI, functionName: 'name' },
-      { address: USDC_ADDRESS, abi: ERC20_PERMIT_ABI, functionName: 'version' },
+      { address: TOKEN_ADDRESS, abi: ERC20_PERMIT_ABI, functionName: 'nonces', args: [walletAddress ?? '0x0'] },
+      { address: TOKEN_ADDRESS, abi: ERC20_PERMIT_ABI, functionName: 'name' },
+      { address: TOKEN_ADDRESS, abi: ERC20_PERMIT_ABI, functionName: 'version' },
     ],
     query: { enabled: !!walletAddress },
   })
 
   const nonce = permitData?.[0]?.result as bigint | undefined
   const tokenName = permitData?.[1]?.result as string | undefined
-  // USDC Circle Arbitrum Sepolia utilise version "2", mock OZ v5 utilise "1"
+  // EURC Circle Arbitrum Sepolia utilise version "2", mock OZ v5 utilise "1"
   const tokenVersion = (permitData?.[2]?.result as string | undefined) ?? '1'
 
   const { signTypedData, isPending: isSigning, error: signError } = useSignTypedData()
@@ -59,7 +59,7 @@ export function useAcceptDevis(
           name: tokenName,
           version: tokenVersion,
           chainId,
-          verifyingContract: USDC_ADDRESS,
+          verifyingContract: TOKEN_ADDRESS,
         },
         types: {
           Permit: [

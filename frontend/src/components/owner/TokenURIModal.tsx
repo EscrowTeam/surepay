@@ -117,7 +117,7 @@ export function TokenURIModal({ chantierId, chantierName }: TokenURIModalProps) 
                             </span>
                             <span className="flex-1 truncate">{j.description}</span>
                             <span className="ml-3 shrink-0 text-[oklch(0.82_0.15_175)] font-medium">
-                              {j.montant} USDC
+                              {j.montant} EURC
                             </span>
                             <span className="ml-3 shrink-0 text-muted-foreground">
                               {JALON_STATUT_LABEL[j.statut] ?? j.statut}

@@ -7,7 +7,7 @@ const { ethers } = await network.connect();
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-const usdc = (amount: number) => BigInt(amount) * 10n ** 6n;
+const eurc = (amount: number) => BigInt(amount) * 10n ** 6n;
 
 /** Valeurs des enums — doivent correspondre à l'ordre dans DataTypes.sol */
 const ChantierStatus = {
@@ -37,13 +37,13 @@ const JalonStatus = {
 describe("EscrowVault", () => {
   let owner: any, treasury: any, arbiter: any;
   let particulier: any, artisan: any, stranger: any;
-  let vault: any, registry: any, nft: any, mockUSDC: any;
+  let vault: any, registry: any, nft: any, mockEURC: any;
 
-  const DEVIS = usdc(10_000);
-  const DEPOSIT = (DEVIS * 11_000n) / 10_000n; // 11 000 USDC
+  const DEVIS = eurc(10_000);
+  const DEPOSIT = (DEVIS * 11_000n) / 10_000n; // 11 000 EURC
   const PROOF = ethers.keccak256(ethers.toUtf8Bytes("preuve-v1"));
   const DESCS = ["Fondations", "Gros œuvre", "Couverture", "Second œuvre", "Finitions"];
-  const MONTANTS = [usdc(2_000), usdc(2_000), usdc(2_000), usdc(2_000), usdc(2_000)];
+  const MONTANTS = [eurc(2_000), eurc(2_000), eurc(2_000), eurc(2_000), eurc(2_000)];
 
   /**
    * Génère une signature EIP-2612 permit.
@@ -90,10 +90,10 @@ describe("EscrowVault", () => {
   async function deployer() {
     [owner, treasury, arbiter, particulier, artisan, stranger] = await ethers.getSigners();
 
-    // Token ERC-20 mock avec EIP-2612 permit (USDC 6 décimales)
+    // Token ERC-20 mock avec EIP-2612 permit (EURC 6 décimales)
     const ERC20Mock = await ethers.getContractFactory("ERC20Mock");
-    mockUSDC = await ERC20Mock.deploy("Mock USDC", "USDC", 6);
-    await mockUSDC.mint(particulier.address, usdc(100_000));
+    mockEURC = await ERC20Mock.deploy("Mock EURC", "EURC", 6);
+    await mockEURC.mint(particulier.address, eurc(100_000));
 
     // TrustScoreRegistry
     const Registry = await ethers.getContractFactory("TrustScoreRegistry");
@@ -117,16 +117,16 @@ describe("EscrowVault", () => {
     await registry.connect(owner).setEscrowVault(await vault.getAddress());
     // Câblage : vault devient owner du NFT (seul le vault peut minter)
     await nft.connect(owner).transferOwnership(await vault.getAddress());
-    // Vault autorise USDC
-    await vault.connect(owner).setAllowedToken(await mockUSDC.getAddress(), true);
+    // Vault autorise EURC
+    await vault.connect(owner).setAllowedToken(await mockEURC.getAddress(), true);
     // Pas d'approve() préalable — on utilise EIP-2612 permit dans acceptDevisWithPermit()
   }
 
-  /** Soumet un devis standard (5 jalons de 2 000 USDC) et retourne le chantierId */
+  /** Soumet un devis standard (5 jalons de 2 000 EURC) et retourne le chantierId */
   async function soumettreDevis(): Promise<bigint> {
     const tx = await vault.connect(artisan).submitDevis(
       particulier.address,
-      await mockUSDC.getAddress(),
+      await mockEURC.getAddress(),
       DEVIS,
       "Rénovation appartement T3",
       DESCS,
@@ -144,7 +144,7 @@ describe("EscrowVault", () => {
     const id = await soumettreDevis();
     const deadline = await futureDeadline();
     const sig = await signPermit(
-      mockUSDC,
+      mockEURC,
       particulier,
       await vault.getAddress(),
       DEPOSIT,
@@ -167,8 +167,8 @@ describe("EscrowVault", () => {
       expect(await vault.treasury()).to.equal(treasury.address);
     });
 
-    it("USDC est autorisé", async () => {
-      expect(await vault.allowedTokens(await mockUSDC.getAddress())).to.be.true;
+    it("EURC est autorisé", async () => {
+      expect(await vault.allowedTokens(await mockEURC.getAddress())).to.be.true;
     });
   });
 
@@ -187,7 +187,7 @@ describe("EscrowVault", () => {
 
     it("émet DevisSoumis", async () => {
       await expect(
-        vault.connect(artisan).submitDevis(particulier.address, await mockUSDC.getAddress(), DEVIS, "Test", DESCS, MONTANTS)
+        vault.connect(artisan).submitDevis(particulier.address, await mockEURC.getAddress(), DEVIS, "Test", DESCS, MONTANTS)
       ).to.emit(vault, "DevisSoumis");
     });
 
@@ -200,15 +200,15 @@ describe("EscrowVault", () => {
     });
 
     it("rejette si la somme des jalons ≠ devis", async () => {
-      const mauvais = [usdc(1_000), usdc(2_000), usdc(2_000), usdc(2_000), usdc(2_000)];
+      const mauvais = [eurc(1_000), eurc(2_000), eurc(2_000), eurc(2_000), eurc(2_000)];
       await expect(
-        vault.connect(artisan).submitDevis(particulier.address, await mockUSDC.getAddress(), DEVIS, "Test", DESCS, mauvais)
+        vault.connect(artisan).submitDevis(particulier.address, await mockEURC.getAddress(), DEVIS, "Test", DESCS, mauvais)
       ).to.be.revertedWithCustomError(vault, "SommeJalonsMismatch");
     });
 
     it("rejette avec 0 jalons", async () => {
       await expect(
-        vault.connect(artisan).submitDevis(particulier.address, await mockUSDC.getAddress(), DEVIS, "Test", [], [])
+        vault.connect(artisan).submitDevis(particulier.address, await mockEURC.getAddress(), DEVIS, "Test", [], [])
       ).to.be.revertedWithCustomError(vault, "NombreJalonsInvalide");
     });
   });
@@ -218,9 +218,9 @@ describe("EscrowVault", () => {
   describe("rejectDevis()", () => {
     it("marque le chantier DevisRejected sans transfert de fonds", async () => {
       const id = await soumettreDevis();
-      const avant = await mockUSDC.balanceOf(particulier.address);
+      const avant = await mockEURC.balanceOf(particulier.address);
       await vault.connect(particulier).rejectDevis(id);
-      const apres = await mockUSDC.balanceOf(particulier.address);
+      const apres = await mockEURC.balanceOf(particulier.address);
 
       expect((await vault.chantiers(id)).status).to.equal(ChantierStatus.DevisRejected);
       expect(avant).to.equal(apres); // aucun mouvement de fonds
@@ -243,9 +243,9 @@ describe("EscrowVault", () => {
 
   describe("acceptDevisWithPermit()", () => {
     it("prélève 110% via permit et passe le chantier en Active", async () => {
-      const avant = await mockUSDC.balanceOf(particulier.address);
+      const avant = await mockEURC.balanceOf(particulier.address);
       const id = await creerChantierActif();
-      const apres = await mockUSDC.balanceOf(particulier.address);
+      const apres = await mockEURC.balanceOf(particulier.address);
 
       expect(avant - apres).to.equal(DEPOSIT);
       expect((await vault.chantiers(id)).status).to.equal(ChantierStatus.Active);
@@ -295,7 +295,7 @@ describe("EscrowVault", () => {
       const deadline = await futureDeadline();
       // La signature n'est pas validée car le modifier PasLeParticulier revert en premier
       const sig = await signPermit(
-        mockUSDC,
+        mockEURC,
         stranger,
         await vault.getAddress(),
         DEPOSIT,
@@ -312,7 +312,7 @@ describe("EscrowVault", () => {
       const block = await ethers.provider.getBlock("latest");
       const deadline = BigInt(block!.timestamp) - 1n;
       const sig = await signPermit(
-        mockUSDC,
+        mockEURC,
         particulier,
         await vault.getAddress(),
         DEPOSIT,
@@ -331,22 +331,22 @@ describe("EscrowVault", () => {
   describe("Chemin nominal — 5 jalons acceptés sans réserve", () => {
     it("artisan reçoit 98% du devis, buffer 10% retourné au particulier", async () => {
       const id = await creerChantierActif();
-      const artisanAvant = await mockUSDC.balanceOf(artisan.address);
-      const particulierAvant = await mockUSDC.balanceOf(particulier.address);
+      const artisanAvant = await mockEURC.balanceOf(artisan.address);
+      const particulierAvant = await mockEURC.balanceOf(particulier.address);
 
       for (let i = 0; i < 5; i++) {
         await vault.connect(artisan).validateJalon(id, PROOF);
         await vault.connect(particulier).acceptJalon(id);
       }
 
-      const artisanApres = await mockUSDC.balanceOf(artisan.address);
-      const particulierApres = await mockUSDC.balanceOf(particulier.address);
+      const artisanApres = await mockEURC.balanceOf(artisan.address);
+      const particulierApres = await mockEURC.balanceOf(particulier.address);
 
-      // 98% de 10 000 = 9 800 USDC pour l'artisan
+      // 98% de 10 000 = 9 800 EURC pour l'artisan
       const attenduArtisan = (DEVIS * (10_000n - 200n)) / 10_000n;
       expect(artisanApres - artisanAvant).to.equal(attenduArtisan);
 
-      // Buffer 10% = 1 000 USDC retourné au particulier
+      // Buffer 10% = 1 000 EURC retourné au particulier
       expect(particulierApres - particulierAvant).to.equal(DEPOSIT - DEVIS);
 
       expect((await vault.chantiers(id)).status).to.equal(ChantierStatus.Completed);
@@ -386,20 +386,20 @@ describe("EscrowVault", () => {
       await vault.connect(particulier).acceptJalonWithMinorReserves(id, preuveClient);
 
       const j = await vault.getJalon(id, 0);
-      const JALON = usdc(2_000);
-      expect(j.blockedAmount).to.equal((JALON * 1_000n) / 10_000n); // 200 USDC
-      expect(j.penaltyAmount).to.equal((JALON * 300n) / 10_000n);   // 60 USDC
+      const JALON = eurc(2_000);
+      expect(j.blockedAmount).to.equal((JALON * 1_000n) / 10_000n); // 200 EURC
+      expect(j.penaltyAmount).to.equal((JALON * 300n) / 10_000n);   // 60 EURC
 
       // Accusé de réception → paiement partiel
-      const avant = await mockUSDC.balanceOf(artisan.address);
+      const avant = await mockEURC.balanceOf(artisan.address);
       await vault.connect(artisan).acknowledgeReserves(id, true);
-      const apres = await mockUSDC.balanceOf(artisan.address);
-      expect(apres - avant).to.equal(JALON - j.blockedAmount - j.penaltyAmount); // 1 740 USDC
+      const apres = await mockEURC.balanceOf(artisan.address);
+      expect(apres - avant).to.equal(JALON - j.blockedAmount - j.penaltyAmount); // 1 740 EURC
 
-      // Levée des réserves → déblocage des 200 USDC
-      const avant2 = await mockUSDC.balanceOf(artisan.address);
+      // Levée des réserves → déblocage des 200 EURC
+      const avant2 = await mockEURC.balanceOf(artisan.address);
       await vault.connect(particulier).lifterReserves(id);
-      const apres2 = await mockUSDC.balanceOf(artisan.address);
+      const apres2 = await mockEURC.balanceOf(artisan.address);
       expect(apres2 - avant2).to.equal(j.blockedAmount);
 
       expect((await vault.chantiers(id)).currentJalonIndex).to.equal(1n);
@@ -448,30 +448,30 @@ describe("EscrowVault", () => {
 
     it("artisan en tort → remboursement particulier calculé depuis j.amount brut", async () => {
       const id = await ouvrirLitige();
-      const avant = await mockUSDC.balanceOf(particulier.address);
+      const avant = await mockEURC.balanceOf(particulier.address);
       await vault.connect(arbiter).resolveLitige(id, true, 2_000, 500);
-      const apres = await mockUSDC.balanceOf(particulier.address);
+      const apres = await mockEURC.balanceOf(particulier.address);
 
       // Nouvelle logique : calcul depuis j.amount entier (blockedAmount ignoré)
       // Le crédit 3% précédent est annulé avant ce calcul (Option A)
-      const JALON = usdc(2_000);
-      const retenue  = (JALON * 2_000n) / 10_000n; // 400 USDC
-      const penalite = (JALON * 500n)   / 10_000n;  // 100 USDC
-      expect(apres - avant).to.equal(JALON - retenue - penalite); // 1 500 USDC
+      const JALON = eurc(2_000);
+      const retenue  = (JALON * 2_000n) / 10_000n; // 400 EURC
+      const penalite = (JALON * 500n)   / 10_000n;  // 100 EURC
+      expect(apres - avant).to.equal(JALON - retenue - penalite); // 1 500 EURC
       expect((await vault.chantiers(id)).status).to.equal(ChantierStatus.Active);
     });
 
     it("particulier en tort → artisan reçoit jalon net de 2% (pas de penaltyBps)", async () => {
       const id = await ouvrirLitige();
-      const avant = await mockUSDC.balanceOf(artisan.address);
+      const avant = await mockEURC.balanceOf(artisan.address);
       // penaltyBps ignoré quand particulier est en tort
       await vault.connect(arbiter).resolveLitige(id, false, 0, 0);
-      const apres = await mockUSDC.balanceOf(artisan.address);
+      const apres = await mockEURC.balanceOf(artisan.address);
 
       // Artisan reçoit j.amount × 98% (frais plateforme 2% fixes)
-      const JALON = usdc(2_000);
+      const JALON = eurc(2_000);
       const PLATFORM_FEE_BPS = 200n;
-      expect(apres - avant).to.equal(JALON - (JALON * PLATFORM_FEE_BPS) / 10_000n); // 1 960 USDC
+      expect(apres - avant).to.equal(JALON - (JALON * PLATFORM_FEE_BPS) / 10_000n); // 1 960 EURC
     });
 
     it("particulier en tort → buffer non retourné à la clôture", async () => {
@@ -481,14 +481,14 @@ describe("EscrowVault", () => {
       // Valider les jalons restants (jalon 0 vient d'être résolu, jalons 1 et 2 à faire)
       const chantier = await vault.chantiers(id);
       const jalonCount = Number(chantier.jalonCount);
-      const avantCloture = await mockUSDC.balanceOf(particulier.address);
+      const avantCloture = await mockEURC.balanceOf(particulier.address);
 
       for (let i = 1; i < jalonCount; i++) {
         await vault.connect(artisan).validateJalon(id, PROOF);
         await vault.connect(particulier).acceptJalon(id);
       }
 
-      const apresCloture = await mockUSDC.balanceOf(particulier.address);
+      const apresCloture = await mockEURC.balanceOf(particulier.address);
       // Le particulier ne reçoit rien (ni buffer, ni jalon — tout le dépôt a été consommé)
       expect(apresCloture).to.equal(avantCloture);
       expect((await vault.chantiers(id)).status).to.equal(ChantierStatus.Completed);
@@ -506,15 +506,15 @@ describe("EscrowVault", () => {
   describe("cancelChantier()", () => {
     it("artisan reçoit le 1er jalon, particulier récupère le reste", async () => {
       const id = await creerChantierActif();
-      const artisanAvant = await mockUSDC.balanceOf(artisan.address);
-      const particulierAvant = await mockUSDC.balanceOf(particulier.address);
+      const artisanAvant = await mockEURC.balanceOf(artisan.address);
+      const particulierAvant = await mockEURC.balanceOf(particulier.address);
 
       await vault.connect(particulier).cancelChantier(id);
 
-      const artisanApres = await mockUSDC.balanceOf(artisan.address);
-      const particulierApres = await mockUSDC.balanceOf(particulier.address);
+      const artisanApres = await mockEURC.balanceOf(artisan.address);
+      const particulierApres = await mockEURC.balanceOf(particulier.address);
 
-      const premierJalon = usdc(2_000);
+      const premierJalon = eurc(2_000);
       expect(artisanApres - artisanAvant).to.equal(premierJalon);
       expect(particulierApres - particulierAvant).to.equal(DEPOSIT - premierJalon);
       expect((await vault.chantiers(id)).status).to.equal(ChantierStatus.Cancelled);
@@ -551,7 +551,7 @@ describe("EscrowVault", () => {
     });
 
     it("seul le owner peut ajouter un token", async () => {
-      await expect(vault.connect(stranger).setAllowedToken(await mockUSDC.getAddress(), false))
+      await expect(vault.connect(stranger).setAllowedToken(await mockEURC.getAddress(), false))
         .to.be.revertedWithCustomError(vault, "OwnableUnauthorizedAccount");
     });
   });

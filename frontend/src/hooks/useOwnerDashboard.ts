@@ -6,7 +6,7 @@ import { useReadContracts } from 'wagmi'
 import { publicClient, DEPLOY_FROM_BLOCK } from '@/lib/client'
 import {
   ESCROW_VAULT_ADDRESS,
-  USDC_ADDRESS,
+  TOKEN_ADDRESS,
   ESCROW_VAULT_ABI,
   YIELD_PROVIDER_ABI,
 } from '@/lib/contracts'
@@ -90,7 +90,7 @@ export function useOwnerDashboard() {
         address: ESCROW_VAULT_ADDRESS,
         abi: ESCROW_VAULT_ABI,
         functionName: 'platformFees',
-        args: [USDC_ADDRESS],
+        args: [TOKEN_ADDRESS],
       },
       {
         address: ESCROW_VAULT_ADDRESS,
@@ -101,7 +101,7 @@ export function useOwnerDashboard() {
         address: ESCROW_VAULT_ADDRESS,
         abi: ESCROW_VAULT_ABI,
         functionName: 'yieldPrincipal',
-        args: [USDC_ADDRESS],
+        args: [TOKEN_ADDRESS],
       },
     ],
   })
@@ -141,7 +141,7 @@ export function useOwnerDashboard() {
             address: yieldProviderAddress,
             abi: YIELD_PROVIDER_ABI,
             functionName: 'pendingYield',
-            args: [USDC_ADDRESS, yieldPrincipal],
+            args: [TOKEN_ADDRESS, yieldPrincipal],
           },
         ]
       : [],

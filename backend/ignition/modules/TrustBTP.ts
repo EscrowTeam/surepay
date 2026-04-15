@@ -10,31 +10,31 @@ import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
  *   4. Câblage : TrustScoreRegistry.setEscrowVault(vault)
  *   5. Câblage : ChantierNFT.transferOwnership(vault)  ← vault devient owner du NFT
  *   6. Câblage : AaveV3YieldProvider (déployé séparément, optionnel)
- *   7. Câblage : EscrowVault.setAllowedToken(USDC, true)
+ *   7. Câblage : EscrowVault.setAllowedToken(EURC, true)
  *
  * Paramètres (à fournir via --parameters ou ignition/parameters.json) :
  *   owner        — propriétaire de la plateforme (multisig)
  *   treasury     — adresse de la trésorerie (frais + yield)
  *   arbiter      — adresse de l'arbitre des litiges
  *   aavePool     — adresse du Pool Aave V3 (optionnel, si yield activé)
- *   usdcAddress  — adresse du token USDC
- *   aUsdcAddress — adresse de l'aUSDC Aave (optionnel)
+ *   eurcAddress  — adresse du token EURC
+ *   aEurcAddress — adresse de l'aEURC Aave (optionnel)
  *
  * Adresses Arbitrum Sepolia (début 2026) :
  *   Aave V3 Pool   : 0xBfC91D59fdAA134A4ED45f7B584cAf96D7792Eff
- *   USDC           : 0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d
- *   aUSDC          : 0x460b97BD498E1157530AEb3086301d5225b91216
+ *   EURC           : à renseigner (Circle EURC sur Arbitrum Sepolia)
+ *   aEURC          : à renseigner (aToken Aave correspondant)
  */
 const TrustBTPModule = buildModule("TrustBTP", (m) => {
   // Paramètres de déploiement
   const owner = m.getParameter("owner");
   const treasury = m.getParameter("treasury");
   const arbiter = m.getParameter("arbiter");
-  const usdcAddress = m.getParameter("usdcAddress");
+  const eurcAddress = m.getParameter("eurcAddress");
 
   // Paramètres optionnels pour le yield provider Aave
   const aavePool = m.getParameter("aavePool");
-  const aUsdcAddress = m.getParameter("aUsdcAddress");
+  const aEurcAddress = m.getParameter("aEurcAddress");
 
   // 1. Déploiement TrustScoreRegistry
   const trustScoreRegistry = m.contract("TrustScoreRegistry", [owner]);
@@ -67,9 +67,9 @@ const TrustBTPModule = buildModule("TrustBTP", (m) => {
     escrowVault,
   ]);
 
-  // Enregistrement du token USDC dans le yield provider
-  m.call(aaveYieldProvider, "registerToken", [usdcAddress, aUsdcAddress], {
-    id: "registerUSDC",
+  // Enregistrement du token EURC dans le yield provider
+  m.call(aaveYieldProvider, "registerToken", [eurcAddress, aEurcAddress], {
+    id: "registerEURC",
   });
 
   // Connexion du yield provider au vault
@@ -77,9 +77,9 @@ const TrustBTPModule = buildModule("TrustBTP", (m) => {
     id: "wireYieldProvider",
   });
 
-  // 7. Autorisation du token USDC dans le vault
-  m.call(escrowVault, "setAllowedToken", [usdcAddress, true], {
-    id: "allowUSDC",
+  // 7. Autorisation du token EURC dans le vault
+  m.call(escrowVault, "setAllowedToken", [eurcAddress, true], {
+    id: "allowEURC",
   });
 
   return { trustScoreRegistry, chantierNFT, escrowVault, aaveYieldProvider };

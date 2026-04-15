@@ -6,7 +6,7 @@ import { ChevronDown, ChevronUp, ExternalLink, Clock } from 'lucide-react'
 import { useChantier } from '@/hooks/useChantier'
 import { useJalonActions } from '@/hooks/useJalonActions'
 import { ChantierStatus, JalonStatus } from '@/types/contracts'
-import { formatUsdc, shortAddress, hashProof, countValidatedJalons, timeUntilAutoValidation } from '@/lib/utils'
+import { formatToken, shortAddress, hashProof, countValidatedJalons, timeUntilAutoValidation } from '@/lib/utils'
 import { ChantierStatusBadge } from './StatusBadge'
 import { JalonRow } from './JalonRow'
 import { Button } from '@/components/ui/button'
@@ -95,7 +95,7 @@ export function ChantierAccordionCard({ chantierId, walletAddress, defaultOpen =
                 ? 'text-sky-300'
                 : 'text-muted-foreground'
           }`}>
-            {formatUsdc(chantier.devisAmount)}
+            {formatToken(chantier.devisAmount)}
           </span>
           {open ? <ChevronUp className="size-4 text-muted-foreground" /> : <ChevronDown className="size-4 text-muted-foreground" />}
         </div>

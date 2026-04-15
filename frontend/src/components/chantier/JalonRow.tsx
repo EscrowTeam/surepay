@@ -2,7 +2,7 @@
 
 import { CheckCircle2, Clock, AlertTriangle, ShieldCheck, ShieldAlert, MinusCircle } from 'lucide-react'
 import { Jalon, JalonStatus } from '@/types/contracts'
-import { formatUsdc, timeUntilAutoValidation } from '@/lib/utils'
+import { formatToken, timeUntilAutoValidation } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { JalonStatusLabel } from './StatusBadge'
 
@@ -45,7 +45,7 @@ export function JalonRow({ jalon, index, isCurrent, role, chantierId, devisAmoun
           <div className="flex items-center gap-2 mt-0.5">
             <span className="text-xs text-muted-foreground">
               {pct !== null && <span className="text-muted-foreground/70">{pct}% — </span>}
-              {formatUsdc(jalon.amount)}
+              {formatToken(jalon.amount)}
             </span>
             {jalon.status === JalonStatus.Finished && autoVal && (
               <span className={`text-xs ${autoVal.expired ? 'text-emerald-400' : 'text-blue-400'}`}>

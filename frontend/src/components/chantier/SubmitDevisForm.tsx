@@ -4,8 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Trash2, Loader2, CheckCircle2 } from 'lucide-react'
 import { useSubmitDevis } from '@/hooks/useSubmitDevis'
-import { USDC_ADDRESS } from '@/lib/contracts'
-import { parseUsdc, formatUsdc } from '@/lib/utils'
+import { TOKEN_ADDRESS } from '@/lib/contracts'
+import { parseToken, formatToken } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -26,10 +26,10 @@ export function SubmitDevisForm() {
   const [jalons, setJalons] = useState<JalonField[]>([{ ...DEFAULT_JALON }, { ...DEFAULT_JALON }])
   const { submitDevis, isPending, isSuccess, error } = useSubmitDevis()
 
-  const totalAmount = jalons.reduce((sum, j) => sum + parseUsdc(j.amount), 0n)
+  const totalAmount = jalons.reduce((sum, j) => sum + parseToken(j.amount), 0n)
   const allFilled = particulier.startsWith('0x') && particulier.length === 42 &&
     nomChantier.trim().length > 0 &&
-    jalons.every(j => j.description.trim() && parseUsdc(j.amount) > 0n)
+    jalons.every(j => j.description.trim() && parseToken(j.amount) > 0n)
 
   function addJalon() {
     if (jalons.length < 5) setJalons([...jalons, { ...DEFAULT_JALON }])
@@ -48,11 +48,11 @@ export function SubmitDevisForm() {
     if (!allFilled) return
     submitDevis(
       particulier as `0x${string}`,
-      USDC_ADDRESS,
+      TOKEN_ADDRESS,
       totalAmount,
       nomChantier.trim(),
       jalons.map(j => j.description),
-      jalons.map(j => parseUsdc(j.amount))
+      jalons.map(j => parseToken(j.amount))
     )
   }
 
@@ -111,7 +111,7 @@ export function SubmitDevisForm() {
             {/* mini résumé visuel */}
           </div>
           <span className="text-sm font-semibold text-[oklch(0.82_0.15_175)]">
-            Total : {formatUsdc(totalAmount)}
+            Total : {formatToken(totalAmount)}
           </span>
         </div>
 
@@ -133,7 +133,7 @@ export function SubmitDevisForm() {
                   </div>
                   <div className="flex gap-2">
                     <Input
-                      placeholder="Montant USDC"
+                      placeholder="Montant EURC"
                       type="number"
                       min="0"
                       step="0.01"
@@ -177,16 +177,16 @@ export function SubmitDevisForm() {
         <div className="rounded-lg border border-[oklch(0.82_0.15_175)]/20 bg-[oklch(0.82_0.15_175)]/5 px-4 py-3 space-y-1 text-sm">
           <div className="flex justify-between">
             <span className="text-muted-foreground">Montant devis</span>
-            <span>{formatUsdc(totalAmount)}</span>
+            <span>{formatToken(totalAmount)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Dépôt demandé (110%)</span>
             <span className="font-semibold text-[oklch(0.82_0.15_175)]">
-              {formatUsdc((totalAmount * 11n) / 10n)}
+              {formatToken((totalAmount * 11n) / 10n)}
             </span>
           </div>
           <p className="text-xs text-muted-foreground pt-1">
-            Le client devra approuver ce montant en USDC avant de signer.
+            Le client devra approuver ce montant en EURC avant de signer.
           </p>
         </div>
       )}
