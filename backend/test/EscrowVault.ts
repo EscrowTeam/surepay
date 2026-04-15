@@ -446,28 +446,52 @@ describe("EscrowVault", () => {
       return id;
     }
 
-    it("artisan en tort → remboursement particulier", async () => {
+    it("artisan en tort → remboursement particulier calculé depuis j.amount brut", async () => {
       const id = await ouvrirLitige();
       const avant = await mockUSDC.balanceOf(particulier.address);
       await vault.connect(arbiter).resolveLitige(id, true, 2_000, 500);
       const apres = await mockUSDC.balanceOf(particulier.address);
 
+      // Nouvelle logique : calcul depuis j.amount entier (blockedAmount ignoré)
+      // Le crédit 3% précédent est annulé avant ce calcul (Option A)
       const JALON = usdc(2_000);
-      const bloque = (JALON * 2_000n) / 10_000n;
-      const penalite = (JALON * 500n) / 10_000n;
-      expect(apres - avant).to.equal(JALON - bloque - penalite);
+      const retenue  = (JALON * 2_000n) / 10_000n; // 400 USDC
+      const penalite = (JALON * 500n)   / 10_000n;  // 100 USDC
+      expect(apres - avant).to.equal(JALON - retenue - penalite); // 1 500 USDC
       expect((await vault.chantiers(id)).status).to.equal(ChantierStatus.Active);
     });
 
-    it("particulier en tort → artisan payé", async () => {
+    it("particulier en tort → artisan reçoit jalon net de 2% (pas de penaltyBps)", async () => {
       const id = await ouvrirLitige();
       const avant = await mockUSDC.balanceOf(artisan.address);
-      await vault.connect(arbiter).resolveLitige(id, false, 0, 500);
+      // penaltyBps ignoré quand particulier est en tort
+      await vault.connect(arbiter).resolveLitige(id, false, 0, 0);
       const apres = await mockUSDC.balanceOf(artisan.address);
 
+      // Artisan reçoit j.amount × 98% (frais plateforme 2% fixes)
       const JALON = usdc(2_000);
-      const penalite = (JALON * 500n) / 10_000n;
-      expect(apres - avant).to.equal(JALON - penalite);
+      const PLATFORM_FEE_BPS = 200n;
+      expect(apres - avant).to.equal(JALON - (JALON * PLATFORM_FEE_BPS) / 10_000n); // 1 960 USDC
+    });
+
+    it("particulier en tort → buffer non retourné à la clôture", async () => {
+      const id = await ouvrirLitige();
+      await vault.connect(arbiter).resolveLitige(id, false, 0, 0);
+
+      // Valider les jalons restants (jalon 0 vient d'être résolu, jalons 1 et 2 à faire)
+      const chantier = await vault.chantiers(id);
+      const jalonCount = Number(chantier.jalonCount);
+      const avantCloture = await mockUSDC.balanceOf(particulier.address);
+
+      for (let i = 1; i < jalonCount; i++) {
+        await vault.connect(artisan).validateJalon(id, PROOF);
+        await vault.connect(particulier).acceptJalon(id);
+      }
+
+      const apresCloture = await mockUSDC.balanceOf(particulier.address);
+      // Le particulier ne reçoit rien (ni buffer, ni jalon — tout le dépôt a été consommé)
+      expect(apresCloture).to.equal(avantCloture);
+      expect((await vault.chantiers(id)).status).to.equal(ChantierStatus.Completed);
     });
 
     it("rejette si appelé par un tiers", async () => {

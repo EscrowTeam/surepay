@@ -12,6 +12,7 @@ interface JalonRowProps {
   isCurrent: boolean
   role: 'artisan' | 'particulier' | 'arbitre' | 'viewer'
   chantierId: bigint
+  devisAmount?: bigint
   onValidate?: () => void
   onAccept?: () => void
   onTriggerAuto?: () => void
@@ -28,8 +29,10 @@ const JALON_ICON: Record<JalonStatus, React.ReactNode> = {
   [JalonStatus.ReservesLifted]: <ShieldCheck className="size-4 text-teal-400" />,
 }
 
-export function JalonRow({ jalon, index, isCurrent, role, chantierId, onValidate, onAccept, onTriggerAuto, onOpenDetail }: JalonRowProps) {
-  const pct = Math.round(Number(jalon.amount) / 1e6) // for display — used later with total
+export function JalonRow({ jalon, index, isCurrent, role, chantierId, devisAmount, onValidate, onAccept, onTriggerAuto, onOpenDetail }: JalonRowProps) {
+  const pct = devisAmount && devisAmount > 0n
+    ? Math.round((Number(jalon.amount) / Number(devisAmount)) * 100)
+    : null
 
   const autoVal = jalon.status === JalonStatus.Finished ? timeUntilAutoValidation(jalon.finishedAt) : null
 
@@ -40,7 +43,10 @@ export function JalonRow({ jalon, index, isCurrent, role, chantierId, onValidate
         <div>
           <span className="text-sm text-foreground/90">{jalon.description}</span>
           <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-xs text-muted-foreground">{formatUsdc(jalon.amount)}</span>
+            <span className="text-xs text-muted-foreground">
+              {pct !== null && <span className="text-muted-foreground/70">{pct}% — </span>}
+              {formatUsdc(jalon.amount)}
+            </span>
             {jalon.status === JalonStatus.Finished && autoVal && (
               <span className={`text-xs ${autoVal.expired ? 'text-emerald-400' : 'text-blue-400'}`}>
                 · {autoVal.label}

@@ -279,7 +279,8 @@ contract EscrowVault is Ownable, ReentrancyGuard {
             jalonCount: count,
             submittedAt: block.timestamp,
             acceptedAt: 0,
-            completedAt: 0
+            completedAt: 0,
+            bufferForfeited: false
         });
 
         // Stockage immuable des jalons
@@ -624,10 +625,27 @@ contract EscrowVault is Ownable, ReentrancyGuard {
 
     /// @notice L'arbitre tranche le litige et définit la répartition des fonds.
     ///
+    /// @dev Deux cas distincts selon la responsabilité :
+    ///
+    ///   Artisan en tort :
+    ///     - Calcul effectué sur le montant brut du jalon (j.amount), sans tenir
+    ///       compte du blockedAmount établi lors des réserves mineures.
+    ///     - platformFees est d'abord corrigé du crédit de 3% anticipé lors de
+    ///       acceptJalonWithMinorReserves (Option A).
+    ///     - Particulier reçoit : j.amount − retenue − pénalité.
+    ///     - Plateforme conserve : retenue + pénalité.
+    ///
+    ///   Particulier en tort :
+    ///     - Le crédit anticipé de 3% est annulé (même correction platformFees).
+    ///     - Artisan reçoit le jalon net de 2% de frais via _libererJalon.
+    ///     - Le buffer intégral (10% du devis) est versé à la plateforme.
+    ///     - c.bufferForfeited est mis à true pour bloquer le retour du buffer
+    ///       à la clôture du chantier.
+    ///
     /// @param chantierId    Chantier en statut InLitige
     /// @param artisanEnTort true = artisan responsable, false = particulier
-    /// @param blockedBps    BPS du montant jalon conservé par la plateforme (0–10000)
-    /// @param penaltyBps    BPS de pénalité supplémentaire (0–5000)
+    /// @param blockedBps    BPS du montant jalon conservé par la plateforme (0–10000, artisan en tort seulement)
+    /// @param penaltyBps    Ignoré si particulier en tort — sans effet (0–5000, artisan en tort seulement)
     function resolveLitige(uint256 chantierId, bool artisanEnTort, uint256 blockedBps, uint256 penaltyBps)
         external
         nonReentrant
@@ -641,25 +659,55 @@ contract EscrowVault is Ownable, ReentrancyGuard {
         uint8 idx = c.currentJalonIndex;
         DataTypes.Jalon storage j = jalons[chantierId][idx];
 
-        uint256 montantJalon = j.amount;
-        uint256 bloque = (montantJalon * blockedBps) / DataTypes.BPS_DENOMINATOR;
-        uint256 penalite = (montantJalon * penaltyBps) / DataTypes.BPS_DENOMINATOR;
+        // Annuler le crédit de 3% établi lors de acceptJalonWithMinorReserves.
+        // Ce crédit anticipe une pénalité sur l'artisan qui doit être recalculée
+        // proprement dans les deux branches ci-dessous.
+        platformFees[c.token] -= j.penaltyAmount;
 
         uint256 montantArtisan;
         uint256 remboursementParticulier;
+        uint256 penalitePlateforme;
 
         if (artisanEnTort) {
-            // Remboursement partiel au particulier, plateforme garde bloque + pénalité
-            remboursementParticulier = montantJalon - bloque - penalite;
+            // ── Cas 1 : artisan responsable ──────────────────────────────────
+            // Calcul depuis j.amount entier (j.blockedAmount ignoré).
+            uint256 retenue  = (j.amount * blockedBps)  / DataTypes.BPS_DENOMINATOR;
+            uint256 penalite = (j.amount * penaltyBps)  / DataTypes.BPS_DENOMINATOR;
+            remboursementParticulier = j.amount - retenue - penalite;
+            penalitePlateforme       = retenue + penalite;
+
             _transferDepuisSequestre(c.token, c.particulier, remboursementParticulier, c.yieldOptIn);
+            platformFees[c.token] += penalitePlateforme;
+
+            // yieldPrincipal : décrémenter du montant total du jalon
+            // (cohérent avec _libererJalon qui décrément du brut, frais inclus)
+            if (c.yieldOptIn) yieldPrincipal[c.token] -= j.amount;
+
         } else {
-            // Artisan reçoit le jalon moins plateforme
-            montantArtisan = montantJalon - bloque - penalite;
-            _transferDepuisSequestre(c.token, c.artisan, montantArtisan, c.yieldOptIn);
+            // ── Cas 2 : particulier responsable ─────────────────────────────
+            // Artisan reçoit le jalon net de 2% de frais plateforme.
+            // _libererJalon gère : platformFees += 2%, transfert 98%, yieldPrincipal -= j.amount
+            _libererJalon(chantierId, idx, j.amount);
+            montantArtisan     = (j.amount * (DataTypes.BPS_DENOMINATOR - DataTypes.PLATFORM_FEE_BPS))
+                                   / DataTypes.BPS_DENOMINATOR;
+            penalitePlateforme = (j.amount * DataTypes.PLATFORM_FEE_BPS) / DataTypes.BPS_DENOMINATOR;
+
+            // Le buffer intégral (10% du devis) est conservé par la plateforme.
+            uint256 buffer = c.depositAmount - c.devisAmount;
+            platformFees[c.token] += buffer;
+            penalitePlateforme     += buffer;
+
+            // Le buffer est toujours en yield si yieldOptIn — le décrémenter
+            // pour que la comptabilité yieldPrincipal reste cohérente.
+            if (c.yieldOptIn) yieldPrincipal[c.token] -= buffer;
+
+            // Bloquer le retour du buffer à la clôture du chantier.
+            c.bufferForfeited = true;
         }
 
-        platformFees[c.token] += bloque + penalite;
-        if (c.yieldOptIn) yieldPrincipal[c.token] -= (montantArtisan + remboursementParticulier);
+        // Réinitialiser les champs de réserves du jalon (état propre)
+        j.blockedAmount = 0;
+        j.penaltyAmount = 0;
 
         j.status = DataTypes.JalonStatus.Accepted;
         _syncNFT(chantierId, idx, DataTypes.JalonStatus.Accepted);
@@ -670,7 +718,7 @@ contract EscrowVault is Ownable, ReentrancyGuard {
 
         _avancerOuTerminer(chantierId);
 
-        emit LitigeResolu(chantierId, idx, artisanEnTort, montantArtisan, remboursementParticulier, bloque + penalite);
+        emit LitigeResolu(chantierId, idx, artisanEnTort, montantArtisan, remboursementParticulier, penalitePlateforme);
     }
 
     // =========================================================================
@@ -795,14 +843,19 @@ contract EscrowVault is Ownable, ReentrancyGuard {
         uint8 prochain = c.currentJalonIndex + 1;
 
         if (prochain >= c.jalonCount) {
-            // Tous les jalons terminés — retour du buffer 10% au particulier
+            // Tous les jalons terminés
             c.status = DataTypes.ChantierStatus.Completed;
             c.completedAt = block.timestamp;
 
-            uint256 buffer = c.depositAmount - c.devisAmount;
-            if (buffer > 0) {
-                _transferDepuisSequestre(c.token, c.particulier, buffer, c.yieldOptIn);
-                if (c.yieldOptIn) yieldPrincipal[c.token] -= buffer;
+            // Le buffer 10% est retourné au particulier sauf si celui-ci était
+            // en tort lors d'un litige (bufferForfeited = true) — dans ce cas
+            // le buffer a déjà été versé à la plateforme dans resolveLitige.
+            if (!c.bufferForfeited) {
+                uint256 buffer = c.depositAmount - c.devisAmount;
+                if (buffer > 0) {
+                    _transferDepuisSequestre(c.token, c.particulier, buffer, c.yieldOptIn);
+                    if (c.yieldOptIn) yieldPrincipal[c.token] -= buffer;
+                }
             }
 
             _mettreAJourTrustScore(chantierId);
@@ -849,6 +902,7 @@ contract EscrowVault is Ownable, ReentrancyGuard {
 
         chantierNFT.mintChantier(
             chantierId,
+            c.name,
             c.artisan,
             c.particulier,
             c.token,

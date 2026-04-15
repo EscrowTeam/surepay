@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { parseAbiItem } from 'viem'
-import { publicClient } from '@/lib/client'
+import { publicClient, DEPLOY_FROM_BLOCK } from '@/lib/client'
 import { ESCROW_VAULT_ADDRESS } from '@/lib/contracts'
 
 // Charge les IDs de chantiers liés à une adresse (en tant qu'artisan ou particulier)
@@ -10,6 +10,8 @@ import { ESCROW_VAULT_ADDRESS } from '@/lib/contracts'
 export function useChantiersByAddress(address: `0x${string}` | undefined) {
   const [chantierIds, setChantierIds] = useState<bigint[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [isArtisan, setIsArtisan] = useState(false)
+  const [isParticulier, setIsParticulier] = useState(false)
 
   useEffect(() => {
     if (!address) {
@@ -27,7 +29,7 @@ export function useChantiersByAddress(address: `0x${string}` | undefined) {
             'event DevisSoumis(uint256 indexed chantierId, address indexed artisan, address indexed particulier, address token, uint256 devisAmount)'
           ),
           args: { artisan: address },
-          fromBlock: 0n,
+          fromBlock: DEPLOY_FROM_BLOCK,
           toBlock: 'latest',
         })
 
@@ -38,7 +40,7 @@ export function useChantiersByAddress(address: `0x${string}` | undefined) {
             'event DevisSoumis(uint256 indexed chantierId, address indexed artisan, address indexed particulier, address token, uint256 devisAmount)'
           ),
           args: { particulier: address },
-          fromBlock: 0n,
+          fromBlock: DEPLOY_FROM_BLOCK,
           toBlock: 'latest',
         })
 
@@ -49,6 +51,8 @@ export function useChantiersByAddress(address: `0x${string}` | undefined) {
 
         // Tri décroissant (plus récent en premier)
         setChantierIds([...ids].sort((a, b) => (b > a ? 1 : -1)))
+        setIsArtisan(asArtisan.length > 0)
+        setIsParticulier(asParticulier.length > 0)
       } catch (e) {
         console.error('Erreur chargement chantiers:', e)
         setChantierIds([])
@@ -60,5 +64,5 @@ export function useChantiersByAddress(address: `0x${string}` | undefined) {
     load()
   }, [address])
 
-  return { chantierIds, isLoading }
+  return { chantierIds, isLoading, isArtisan, isParticulier }
 }

@@ -10,11 +10,13 @@ interface StatsBarProps {
   chantierIds: bigint[]
 }
 
-function StatCard({ label, value }: { label: string; value: string | number }) {
+function StatCard({ label, value, alert = false }: { label: string; value: string | number; alert?: boolean }) {
   return (
-    <div className="rounded-xl border border-border/50 bg-card px-5 py-4 flex-1 min-w-0">
+    <div className={`rounded-xl border bg-card px-5 py-4 flex-1 min-w-0 ${
+      alert ? 'border-red-500/30 bg-red-500/5' : 'border-border/50'
+    }`}>
       <div className="text-xs text-muted-foreground mb-1">{label}</div>
-      <div className="text-2xl font-bold text-[oklch(0.82_0.15_175)]">{value}</div>
+      <div className={`text-2xl font-bold ${alert ? 'text-red-400' : 'text-[oklch(0.82_0.15_175)]'}`}>{value}</div>
     </div>
   )
 }
@@ -72,7 +74,7 @@ export function StatsBar({ chantierIds }: StatsBarProps) {
       <StatCard label="Chantiers actifs" value={actifs} />
       <StatCard label="Fonds en escrow" value={formatUsdc(enEscrow)} />
       <StatCard label="Jalons validés" value={`${jalonsDone} / ${jalonsTotal}`} />
-      <StatCard label="Litiges en cours" value={litiges} />
+      <StatCard label="Litiges en cours" value={litiges} alert={litiges > 0} />
     </div>
   )
 }

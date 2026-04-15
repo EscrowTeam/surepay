@@ -115,5 +115,7 @@ library DataTypes {
         uint256 acceptedAt;
         /// @dev Timestamp de clôture complète du chantier
         uint256 completedAt;
+        /// @dev true si le particulier était en tort lors d'un litige — le buffer 10% ne lui est pas retourné
+        bool bufferForfeited;
     }
 }

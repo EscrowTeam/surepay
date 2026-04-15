@@ -20,6 +20,35 @@ const JALON_COMPONENTS = [
 ] as const
 
 export const ESCROW_VAULT_ABI = [
+  // ── Admin (owner) ─────────────────────────────────────────────────────
+  {
+    name: 'owner',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ type: 'address' }],
+  },
+  {
+    name: 'platformFees',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'token', type: 'address' }],
+    outputs: [{ type: 'uint256' }],
+  },
+  {
+    name: 'yieldProvider',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ type: 'address' }],
+  },
+  {
+    name: 'yieldPrincipal',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'token', type: 'address' }],
+    outputs: [{ type: 'uint256' }],
+  },
   // ── Lecture publique ──────────────────────────────────────────────────
   {
     name: 'chantiers',
@@ -333,6 +362,29 @@ export const ERC20_PERMIT_ABI = [
     stateMutability: 'view',
     inputs: [],
     outputs: [{ type: 'string' }],
+  },
+] as const
+
+export const CHANTIER_NFT_ABI = [
+  {
+    name: 'tokenURI',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'tokenId', type: 'uint256' }],
+    outputs: [{ type: 'string' }],
+  },
+] as const
+
+export const YIELD_PROVIDER_ABI = [
+  {
+    name: 'pendingYield',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [
+      { name: 'token', type: 'address' },
+      { name: 'principal', type: 'uint256' },
+    ],
+    outputs: [{ type: 'uint256' }],
   },
 ] as const
 

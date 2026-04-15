@@ -65,6 +65,7 @@ contract ChantierNFT is IChantierNFT, ERC721, Ownable {
     ///      Le NFT est minté vers le vault (msg.sender = vault = owner).
     function mintChantier(
         uint256 chantierId,
+        string calldata name,
         address artisan,
         address particulier,
         address token,
@@ -82,6 +83,7 @@ contract ChantierNFT is IChantierNFT, ERC721, Ownable {
         // Stockage des données immuables du devis
         _devisData[chantierId] = DevisData({
             chantierId: chantierId,
+            name: name,
             artisan: artisan,
             particulier: particulier,
             token: token,
@@ -150,10 +152,11 @@ contract ChantierNFT is IChantierNFT, ERC721, Ownable {
         DevisData memory d = _devisData[tokenId];
 
         string memory json = string.concat(
-            '{"name":"Trust BTP Chantier #', tokenId.toString(), '",',
+            '{"name":"', d.name, ' (#', tokenId.toString(), ')",',
             '"description":"Contrat de chantier - Protocole Trust BTP",',
             '"attributes":[',
             '{"trait_type":"Chantier ID","value":"', tokenId.toString(), '"},',
+            '{"trait_type":"Nom","value":"', d.name, '"},',
             '{"trait_type":"Artisan","value":"', Strings.toHexString(uint256(uint160(d.artisan)), 20), '"},',
             '{"trait_type":"Particulier","value":"', Strings.toHexString(uint256(uint160(d.particulier)), 20), '"},',
             '{"trait_type":"Montant devis (USDC)","value":"', (d.devisAmount / 1e6).toString(), '"},',

@@ -9,6 +9,14 @@ export const publicClient = createPublicClient({
   transport: http(
     isTestnet
       ? (process.env.NEXT_PUBLIC_RPC_URL ?? 'https://sepolia-rollup.arbitrum.io/rpc')
-      : 'http://127.0.0.1:8545/'
+      : 'http://127.0.0.1:8545/',
+    { timeout: 30_000 }
   ),
 })
+
+// Bloc de départ pour les getLogs — évite de scanner depuis le bloc 0.
+// À mettre à jour dans .env.local après chaque déploiement :
+//   NEXT_PUBLIC_DEPLOY_BLOCK=<numéro du bloc du premier déploiement>
+export const DEPLOY_FROM_BLOCK = BigInt(
+  process.env.NEXT_PUBLIC_DEPLOY_BLOCK ?? '1'
+)

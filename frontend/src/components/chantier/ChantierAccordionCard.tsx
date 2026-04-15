@@ -2,11 +2,11 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronDown, ChevronUp, ExternalLink } from 'lucide-react'
+import { ChevronDown, ChevronUp, ExternalLink, Clock } from 'lucide-react'
 import { useChantier } from '@/hooks/useChantier'
 import { useJalonActions } from '@/hooks/useJalonActions'
 import { ChantierStatus, JalonStatus } from '@/types/contracts'
-import { formatUsdc, shortAddress, hashProof, countValidatedJalons } from '@/lib/utils'
+import { formatUsdc, shortAddress, hashProof, countValidatedJalons, timeUntilAutoValidation } from '@/lib/utils'
 import { ChantierStatusBadge } from './StatusBadge'
 import { JalonRow } from './JalonRow'
 import { Button } from '@/components/ui/button'
@@ -38,11 +38,19 @@ export function ChantierAccordionCard({ chantierId, walletAddress, defaultOpen =
   const validated = countValidatedJalons(jalons)
   const progress = chantier.jalonCount > 0 ? (validated / chantier.jalonCount) * 100 : 0
   const fullTitle = chantier.name || jalons[0]?.description || `Chantier #${chantierId}`
-  const title = fullTitle.length > 20 ? fullTitle.slice(0, 20) + '…' : fullTitle
-  const counterpart = role === 'artisan'
-    ? shortAddress(chantier.particulier)
-    : shortAddress(chantier.artisan)
-  const counterpartLabel = role === 'artisan' ? 'Client' : 'Artisan'
+  const title = fullTitle.length > 35 ? fullTitle.slice(0, 35) + '…' : fullTitle
+
+  // Labels contextuels selon le rôle
+  const counterpartLabel = role === 'artisan' ? 'Client' : role === 'particulier' ? 'Artisan' : 'Partie'
+  const counterpartAddress = role === 'artisan' ? chantier.particulier : chantier.artisan
+  const counterpartDisplay = `${counterpartLabel} → ${shortAddress(counterpartAddress)}`
+
+  // Timer 48h sur le jalon courant
+  const currentJalon = jalons[chantier.currentJalonIndex]
+  const autoVal = currentJalon?.status === JalonStatus.Finished
+    ? timeUntilAutoValidation(currentJalon.finishedAt)
+    : null
+  const hasUrgentTimer = autoVal !== null
 
   async function handleValidateJalon() {
     const proof = await hashProof(`proof-${chantierId}-${chantier!.currentJalonIndex}-${Date.now()}`)
@@ -50,24 +58,43 @@ export function ChantierAccordionCard({ chantierId, walletAddress, defaultOpen =
   }
 
   return (
-    <div className="rounded-xl border border-border/50 bg-card overflow-hidden transition-all">
+    <div className={`rounded-xl border bg-card overflow-hidden transition-all ${
+      hasUrgentTimer
+        ? 'border-amber-500/40'
+        : 'border-border/50'
+    }`}>
       {/* En-tête cliquable */}
       <button
         onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between px-5 py-4 hover:bg-white/[0.02] transition-colors"
       >
         <div className="flex flex-col items-start gap-1 text-left">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="font-semibold text-foreground" title={fullTitle}>{title}</span>
             <span className="text-xs text-muted-foreground">#{chantierId.toString()}</span>
             <ChantierStatusBadge status={chantier.status} />
+            {/* Badge urgence timer 48h */}
+            {hasUrgentTimer && (
+              <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
+                autoVal!.expired
+                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                  : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+              }`}>
+                <Clock className="size-3" />
+                {autoVal!.expired ? 'Auto-val. dispo' : autoVal!.label}
+              </span>
+            )}
           </div>
-          <span className="text-xs text-muted-foreground">
-            {counterpartLabel} → {counterpart}
-          </span>
+          <span className="text-xs text-muted-foreground">{counterpartDisplay}</span>
         </div>
         <div className="flex items-center gap-3 flex-shrink-0">
-          <span className="font-bold text-[oklch(0.82_0.15_175)]">
+          <span className={`font-bold ${
+            chantier.status === ChantierStatus.Completed
+              ? 'text-[oklch(0.82_0.15_175)]'
+              : chantier.status === ChantierStatus.Active
+                ? 'text-sky-300'
+                : 'text-muted-foreground'
+          }`}>
             {formatUsdc(chantier.devisAmount)}
           </span>
           {open ? <ChevronUp className="size-4 text-muted-foreground" /> : <ChevronDown className="size-4 text-muted-foreground" />}
@@ -78,7 +105,11 @@ export function ChantierAccordionCard({ chantierId, walletAddress, defaultOpen =
       <div className="px-5 pb-2">
         <div className="h-0.5 w-full rounded-full bg-white/5">
           <div
-            className="h-full rounded-full bg-[oklch(0.82_0.15_175)] transition-all duration-500"
+            className={`h-full rounded-full transition-all duration-500 ${
+              chantier.status === ChantierStatus.Completed
+                ? 'bg-[oklch(0.82_0.15_175)]'
+                : 'bg-sky-400/80'
+            }`}
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -103,6 +134,7 @@ export function ChantierAccordionCard({ chantierId, walletAddress, defaultOpen =
               isCurrent={idx === chantier.currentJalonIndex && chantier.status === ChantierStatus.Active}
               role={role}
               chantierId={chantierId}
+              devisAmount={chantier.devisAmount}
               onValidate={handleValidateJalon}
               onAccept={() => actions.acceptJalon(chantierId)}
               onTriggerAuto={() => actions.triggerAutoValidation(chantierId)}

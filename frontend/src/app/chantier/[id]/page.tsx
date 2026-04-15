@@ -113,7 +113,13 @@ const { chantier, jalons, isLoading, refetch } = useChantier(chantierId)
             </p>
           </div>
           <div className="text-right">
-            <div className="text-2xl font-bold text-[oklch(0.82_0.15_175)]">
+            <div className={`text-2xl font-bold ${
+              chantier.status === ChantierStatus.Completed
+                ? 'text-[oklch(0.82_0.15_175)]'
+                : chantier.status === ChantierStatus.Active
+                  ? 'text-sky-300'
+                  : 'text-muted-foreground'
+            }`}>
               {formatUsdc(chantier.devisAmount)}
             </div>
             <div className="text-xs text-muted-foreground">
@@ -200,7 +206,7 @@ const { chantier, jalons, isLoading, refetch } = useChantier(chantierId)
           <ActionCard title="Devis en attente de signature" icon={<Info className="size-5 text-blue-400" />}>
             <p className="text-sm text-muted-foreground mb-4">
               L'artisan a soumis ce devis. Signez l'autorisation (sans gas), puis déposez{' '}
-              <strong>{formatUsdc(depositAmount)}</strong> USDC (110% du montant) en une seule transaction.
+              <strong>{formatUsdc(depositAmount)}</strong> (110% du montant) en une seule transaction.
             </p>
             <div className="flex items-center gap-2 mb-5">
               <input
@@ -275,20 +281,21 @@ const { chantier, jalons, isLoading, refetch } = useChantier(chantierId)
         {role === 'artisan' &&
           chantier.status === ChantierStatus.Active &&
           currentJalon?.status === JalonStatus.Pending && (
-          <ActionCard title={`Demander la libération du jalon ${chantier.currentJalonIndex + 1} — ${formatUsdc(currentJalon?.amount ?? 0n)}`} icon={<CheckCircle2 className="size-5 text-[oklch(0.82_0.15_175)]" />}>
+          <ActionCard title={`Demander le paiement — Jalon ${chantier.currentJalonIndex + 1} · ${formatUsdc(currentJalon?.amount ?? 0n)}`} icon={<CheckCircle2 className="size-5 text-[oklch(0.82_0.15_175)]" />}>
             <p className="text-sm text-muted-foreground mb-3">
-              Déclarez les travaux de ce jalon terminés et joignez votre preuve d'exécution.
-              Le client dispose de 48h pour valider ou formuler des réserves — sans réponse, le paiement est libéré automatiquement.
+              Déclarez ce jalon terminé. Le client a <strong className="text-foreground/80">48h</strong> pour valider — sans réponse, le paiement est libéré automatiquement.
             </p>
             <div className="space-y-2 mb-4">
-              <Label className="text-xs">Preuve d'exécution (description, URL photo, CID IPFS ou hash 0x...)</Label>
+              <Label className="text-xs font-medium">Preuve d'exécution <span className="text-muted-foreground font-normal">(facultatif)</span></Label>
               <Input
-                placeholder="Ex : Photos des travaux, procès-verbal, lien IPFS..."
+                placeholder="Description des travaux, lien photo, URL..."
                 value={proofInput}
                 onChange={e => setProofInput(e.target.value)}
-                className="text-sm font-mono"
+                className="text-sm"
               />
-              <p className="text-xs text-muted-foreground">Laissez vide pour générer un identifiant automatique.</p>
+              <p className="text-xs text-muted-foreground">
+                Un identifiant unique est généré automatiquement si vous ne renseignez rien.
+              </p>
             </div>
             <Button
               onClick={handleValidateJalon}
@@ -296,7 +303,7 @@ const { chantier, jalons, isLoading, refetch } = useChantier(chantierId)
               className="bg-[oklch(0.82_0.15_175)] text-black hover:bg-[oklch(0.75_0.15_175)] gap-2"
             >
               {isPending && <Loader2 className="size-4 animate-spin" />}
-              Déclarer le jalon terminé et demander le paiement
+              Déclarer terminé et demander le paiement
             </Button>
           </ActionCard>
         )}
@@ -449,47 +456,84 @@ const { chantier, jalons, isLoading, refetch } = useChantier(chantierId)
             </p>
             {/* Panel arbitre — visible si l'adresse ne correspond à aucune partie */}
             {role === 'viewer' && (
-              <div className="space-y-3 border-t border-border/30 pt-3">
-                <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Résolution arbitre</p>
-                <div className="flex gap-3 flex-wrap">
-                  <div className="space-y-1">
-                    <Label className="text-xs">Responsabilité</Label>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant={artisanEnTort ? 'default' : 'outline'}
-                        onClick={() => setArtisanEnTort(true)}
-                      >
-                        Artisan en tort
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant={!artisanEnTort ? 'default' : 'outline'}
-                        onClick={() => setArtisanEnTort(false)}
-                      >
-                        Particulier en tort
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="space-y-1 w-32">
-                    <Label className="text-xs">Retenue plateforme (BPS)</Label>
-                    <Input
-                      type="number" min="0" max="10000"
-                      value={blockedBps}
-                      onChange={e => setBlockedBps(e.target.value)}
-                      className="text-sm"
-                    />
-                  </div>
-                  <div className="space-y-1 w-32">
-                    <Label className="text-xs">Pénalité (BPS, max 5000)</Label>
-                    <Input
-                      type="number" min="0" max="5000"
-                      value={penaltyBps}
-                      onChange={e => setPenaltyBps(e.target.value)}
-                      className="text-sm"
-                    />
+              <div className="space-y-4 border-t border-border/30 pt-4">
+                <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Décision de l'arbitre</p>
+
+                {/* Responsabilité */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Qui est en tort ?</Label>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setArtisanEnTort(true)}
+                      className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                        artisanEnTort
+                          ? 'border-red-500/40 bg-red-500/10 text-red-400'
+                          : 'border-border/50 text-muted-foreground hover:bg-white/5'
+                      }`}
+                    >
+                      Artisan en tort
+                    </button>
+                    <button
+                      onClick={() => setArtisanEnTort(false)}
+                      className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                        !artisanEnTort
+                          ? 'border-amber-500/40 bg-amber-500/10 text-amber-400'
+                          : 'border-border/50 text-muted-foreground hover:bg-white/5'
+                      }`}
+                    >
+                      Particulier en tort
+                    </button>
                   </div>
                 </div>
+
+                {/* Retenue plateforme */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs">Retenue plateforme</Label>
+                    <span className="text-sm font-semibold tabular-nums">
+                      {(Number(blockedBps) / 100).toFixed(1)}%
+                    </span>
+                  </div>
+                  <input
+                    type="range" min="0" max="10000" step="100"
+                    value={blockedBps}
+                    onChange={e => setBlockedBps(e.target.value)}
+                    className="w-full h-1.5 rounded-full appearance-none bg-white/10 accent-[oklch(0.82_0.15_175)] cursor-pointer"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>0%</span><span>50%</span><span>100%</span>
+                  </div>
+                </div>
+
+                {/* Pénalité */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs">Pénalité supplémentaire <span className="text-muted-foreground">(max 50%)</span></Label>
+                    <span className="text-sm font-semibold tabular-nums">
+                      {(Number(penaltyBps) / 100).toFixed(1)}%
+                    </span>
+                  </div>
+                  <input
+                    type="range" min="0" max="5000" step="100"
+                    value={penaltyBps}
+                    onChange={e => setPenaltyBps(e.target.value)}
+                    className="w-full h-1.5 rounded-full appearance-none bg-white/10 accent-[oklch(0.82_0.15_175)] cursor-pointer"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>0%</span><span>25%</span><span>50%</span>
+                  </div>
+                </div>
+
+                {/* Récap */}
+                {currentJalon && (
+                  <div className="rounded-lg bg-white/[0.03] border border-border/30 px-4 py-3 text-xs text-muted-foreground space-y-1">
+                    <p className="font-medium text-foreground/70 mb-2">Récapitulatif de la décision</p>
+                    <p>· Retenue plateforme : <span className="text-foreground">{formatUsdc(currentJalon.amount * BigInt(blockedBps) / 10000n)}</span></p>
+                    <p>· Pénalité : <span className="text-foreground">{formatUsdc(currentJalon.amount * BigInt(penaltyBps) / 10000n)}</span></p>
+                    <p>· Partie en tort perd : <span className="text-red-400">{((Number(blockedBps) + Number(penaltyBps)) / 100).toFixed(1)}%</span></p>
+                  </div>
+                )}
+
                 <Button
                   onClick={() => jalonActions.resolveLitige(
                     chantierId,
@@ -498,10 +542,10 @@ const { chantier, jalons, isLoading, refetch } = useChantier(chantierId)
                     BigInt(penaltyBps)
                   )}
                   disabled={isPending}
-                  className="gap-2"
+                  className="w-full gap-2"
                 >
                   {isPending && <Loader2 className="size-4 animate-spin" />}
-                  Résoudre le litige
+                  Confirmer la résolution
                 </Button>
               </div>
             )}

@@ -28,6 +28,7 @@ interface IChantierNFT {
     /// @notice Données immuables du devis stockées on-chain
     struct DevisData {
         uint256 chantierId;
+        string name;
         address artisan;
         address particulier;
         address token;
@@ -45,6 +46,7 @@ interface IChantierNFT {
     /// @notice Minte le NFT du chantier vers le vault lors de l'acceptation du devis.
     ///         Le tokenId est égal au chantierId.
     /// @param chantierId         Identifiant du chantier (= tokenId du NFT)
+    /// @param name               Nom libre du chantier
     /// @param artisan            Adresse de l'artisan
     /// @param particulier        Adresse du particulier
     /// @param token              Token de paiement (USDC)
@@ -56,6 +58,7 @@ interface IChantierNFT {
     /// @param acceptedAt         Timestamp acceptation particulier
     function mintChantier(
         uint256 chantierId,
+        string calldata name,
         address artisan,
         address particulier,
         address token,
