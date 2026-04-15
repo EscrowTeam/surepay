@@ -39,13 +39,15 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          # ID Reown AppKit — stocker dans Settings > Secrets > Actions
+          # Sensible → Secret GitHub (Settings > Secrets > Actions)
           NEXT_PUBLIC_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_PROJECT_ID || 'ci-build-placeholder' }}
-          # Adresses neutres — le build ne nécessite pas de réseau actif
-          NEXT_PUBLIC_ESCROW_VAULT_ADDRESS: "0x0000000000000000000000000000000000000000"
-          NEXT_PUBLIC_CHANTIER_NFT_ADDRESS: "0x0000000000000000000000000000000000000000"
-          NEXT_PUBLIC_TRUST_SCORE_REGISTRY_ADDRESS: "0x0000000000000000000000000000000000000000"
-          NEXT_PUBLIC_TOKEN_ADDRESS: "0x0000000000000000000000000000000000000000"
-          NEXT_PUBLIC_USDC_ADDRESS: "0x0000000000000000000000000000000000000000"
-          NEXT_PUBLIC_NETWORK: "hardhat"
-          NEXT_PUBLIC_DEPLOY_BLOCK: "1"
+          # Adresses contrats → Variables GitHub (Settings > Variables > Actions)
+          # Si la variable n'est pas définie, on utilise l'adresse nulle comme fallback :
+          # le build Next.js n'effectue aucun appel blockchain, elles ne servent qu'au runtime.
+          NEXT_PUBLIC_ESCROW_VAULT_ADDRESS: ${{ vars.NEXT_PUBLIC_ESCROW_VAULT_ADDRESS || '0x0000000000000000000000000000000000000000' }}
+          NEXT_PUBLIC_CHANTIER_NFT_ADDRESS: ${{ vars.NEXT_PUBLIC_CHANTIER_NFT_ADDRESS || '0x0000000000000000000000000000000000000000' }}
+          NEXT_PUBLIC_TRUST_SCORE_REGISTRY_ADDRESS: ${{ vars.NEXT_PUBLIC_TRUST_SCORE_REGISTRY_ADDRESS || '0x0000000000000000000000000000000000000000' }}
+          NEXT_PUBLIC_TOKEN_ADDRESS: ${{ vars.NEXT_PUBLIC_TOKEN_ADDRESS || '0x0000000000000000000000000000000000000000' }}
+          NEXT_PUBLIC_USDC_ADDRESS: ${{ vars.NEXT_PUBLIC_USDC_ADDRESS || '0x0000000000000000000000000000000000000000' }}
+          NEXT_PUBLIC_NETWORK: ${{ vars.NEXT_PUBLIC_NETWORK || 'hardhat' }}
+          NEXT_PUBLIC_DEPLOY_BLOCK: ${{ vars.NEXT_PUBLIC_DEPLOY_BLOCK || '1' }}
