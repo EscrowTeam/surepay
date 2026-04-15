@@ -38,14 +38,3 @@ jobs:
 
       - name: Run tests
         run: npx hardhat test
-
-      - name: Generate coverage report
-        run: npx hardhat coverage
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          files: backend/coverage/lcov.info
-          flags: contracts
-          token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: false
