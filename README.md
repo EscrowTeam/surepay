@@ -72,17 +72,6 @@ surepay/
 
 ---
 
-## Smart Contracts
-
-| Contrat | Rôle |
-|---|---|
-| `EscrowVault.sol` | Point d'entrée unique — séquestre USDC, jalons, litiges, frais 2% |
-| `ChantierNFT.sol` | ERC-721 Soulbound — dossier probatoire non-transférable par chantier |
-| `TrustScoreRegistry.sol` | Score de réputation artisan (0–100), 4 tiers, gel en litige |
-| `AaveV3YieldProvider.sol` | Yield opt-in — dépôt des fonds séquestrés dans Aave V3 |
-
----
-
 ## Stack technique
 
 **Backend**
