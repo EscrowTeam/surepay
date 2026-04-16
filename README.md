@@ -43,7 +43,6 @@ Le projet illustre les concepts avancés du Web3 :
 - **Traçabilité on-chain** — chaque action émet un événement indexable pour alimenter le frontend en temps réel.
 
 <img src="./doc/image.png" width="700" />
----
 
 ## Structure du Monorepo
 
