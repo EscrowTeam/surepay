@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { parseAbiItem } from 'viem'
-import { publicClient, DEPLOY_FROM_BLOCK } from '@/lib/client'
+import { publicClient } from '@/lib/client'
 import { ESCROW_VAULT_ADDRESS } from '@/lib/contracts'
 
 // Charge les IDs de chantiers liés à une adresse (en tant qu'artisan ou particulier)
@@ -22,26 +22,30 @@ export function useChantiersByAddress(address: `0x${string}` | undefined) {
     const load = async () => {
       setIsLoading(true)
       try {
+        // Arbitrum Sepolia ≈ 250ms/bloc → 10 000 blocs ≈ 42 min de fenêtre        
+        const latestBlock = await publicClient.getBlockNumber()
+        const fromBlock = latestBlock > 10_000n ? latestBlock - 10_000n : 0n
+
+        const event = parseAbiItem(
+          'event DevisSoumis(uint256 indexed chantierId, address indexed artisan, address indexed particulier, address token, uint256 devisAmount)'
+        )
+
         // Chantiers où l'adresse est artisan
         const asArtisan = await publicClient.getLogs({
           address: ESCROW_VAULT_ADDRESS,
-          event: parseAbiItem(
-            'event DevisSoumis(uint256 indexed chantierId, address indexed artisan, address indexed particulier, address token, uint256 devisAmount)'
-          ),
+          event,
           args: { artisan: address },
-          fromBlock: DEPLOY_FROM_BLOCK,
-          toBlock: 'latest',
+          fromBlock,
+          toBlock: latestBlock,
         })
 
         // Chantiers où l'adresse est particulier
         const asParticulier = await publicClient.getLogs({
           address: ESCROW_VAULT_ADDRESS,
-          event: parseAbiItem(
-            'event DevisSoumis(uint256 indexed chantierId, address indexed artisan, address indexed particulier, address token, uint256 devisAmount)'
-          ),
+          event,
           args: { particulier: address },
-          fromBlock: DEPLOY_FROM_BLOCK,
-          toBlock: 'latest',
+          fromBlock,
+          toBlock: latestBlock,
         })
 
         const ids = new Set<bigint>()

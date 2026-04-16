@@ -2,10 +2,10 @@
 // À mettre à jour après chaque déploiement Ignition
 // Source : backend/ignition/deployments/chain-<chainId>/deployed_addresses.json
 
-export const ESCROW_VAULT_ADDRESS = (process.env.NEXT_PUBLIC_ESCROW_VAULT_ADDRESS ?? '0x0000000000000000000000000000000000000000') as `0x${string}`
-export const CHANTIER_NFT_ADDRESS = (process.env.NEXT_PUBLIC_CHANTIER_NFT_ADDRESS ?? '0x0000000000000000000000000000000000000000') as `0x${string}`
-export const TRUST_SCORE_REGISTRY_ADDRESS = (process.env.NEXT_PUBLIC_TRUST_SCORE_REGISTRY_ADDRESS ?? '0x0000000000000000000000000000000000000000') as `0x${string}`
-export const TOKEN_ADDRESS = (process.env.NEXT_PUBLIC_TOKEN_ADDRESS ?? '0x0000000000000000000000000000000000000000') as `0x${string}`
+export const ESCROW_VAULT_ADDRESS = (process.env.NEXT_PUBLIC_ESCROW_VAULT_ADDRESS ?? '0xD7F652F6008FEeC43F47A178fcb144CE0A690910') as `0x${string}`
+export const CHANTIER_NFT_ADDRESS = (process.env.NEXT_PUBLIC_CHANTIER_NFT_ADDRESS ?? '0x14a3579cEB5E0E01581Bb2d86e658e92151003fe') as `0x${string}`
+export const TRUST_SCORE_REGISTRY_ADDRESS = (process.env.NEXT_PUBLIC_TRUST_SCORE_REGISTRY_ADDRESS ?? '0x240521bcb5ef692474f87e0A273ABe4C95572A58') as `0x${string}`
+export const TOKEN_ADDRESS = (process.env.NEXT_PUBLIC_TOKEN_ADDRESS ?? '0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d') as `0x${string}`
 
 // Composant Jalon (tuple) — réutilisé dans plusieurs fonctions ABI
 const JALON_COMPONENTS = [
