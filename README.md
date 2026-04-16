@@ -1,115 +1,112 @@
-# Surepay Construction
+# Trust BTP
 
 ![Tests Solidity](https://github.com/EscrowTeam/surepay/actions/workflows/contracts.yml/badge.svg?branch=main)
-![Build](https://github.com/EscrowTeam/surepay/actions/workflows/frontend.yml/badge.svg?branch=main)
-[![Vercel](https://img.shields.io/github/deployments/EscrowTeam/surepay/Production?label=vercel&logo=vercel&logoColor=white)](https://github.com/EscrowTeam/surepay/deployments)
-
-Plateforme Web3 de sécurisation et d'orchestration des paiements de travaux.
-
-## Vue d'ensemble
-
-Surepay combine trois mécanismes :
-
-1. **Escrow à jalons** — les fonds du client sont bloqués et libérés progressivement à chaque étape validée du chantier.
-2. **Yield opt-in (Morpho)** — si le client l'accepte, les fonds idle sont déployés sur Morpho (ERC-4626) en USDC. Le vault reçoit des shares Morpho ; le client accumule des crédits travaux en échange.
-3. **Lending artisan (CDP)** — les fonds en escrow servent de collatéral. L'artisan peut emprunter des USDC pour financer ses achats de matériaux avant le déblocage du premier jalon.
-
-**Stablecoin unique : USDC (Circle)**
+![Build Frontend](https://github.com/EscrowTeam/surepay/actions/workflows/frontend.yml/badge.svg?branch=main)
+[![License MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![Réseau](https://img.shields.io/badge/réseau-Arbitrum%20Sepolia-orange)](https://sepolia.arbiscan.io)
+[![Contexte](https://img.shields.io/badge/contexte-Projet%20Certification%20Web3-purple)]()
 
 ---
 
-## Structure du repo
+## À propos du projet
+
+Ce projet a été développé dans le cadre d'une certification Web3.
+
+Trust BTP est une plateforme Web3 qui sécurise les paiements de travaux via un escrow smart contract à jalons, génère du yield DeFi sur les fonds en attente, et construit la réputation on-chain de chaque artisan via un Trust Score automatique.
+
+> Note : cette version (Beta/Testnet) est restreinte à Arbitrum Sepolia. L'architecture est conçue pour évoluer vers d'autres protocoles DeFi sur Mainnet.
+
+---
+
+## Concepts clés
+
+| Terme | Définition |
+|---|---|
+| **Séquestre (Escrow)** | Mécanisme de blocage des fonds par un tiers neutre (le smart contract) jusqu'à validation d'une condition. |
+| **Jalon** | Étape définie à l'avance dans le devis. Les fonds correspondants sont libérés uniquement à la validation. |
+| **Devis** | Proposition contractuelle soumise par l'artisan : jalons, montants, délais. Signé on-chain par le particulier. |
+| **Yield opt-in** | Option permettant aux fonds bloqués de générer des intérêts sur Aave V3 pendant la durée du chantier. |
+| **NFT Soulbound** | Token non-transférable lié à un chantier, mis à jour à chaque étape. Sert de preuve d'exécution. |
+| **Trust Score** | Score de réputation (0–100) calculé on-chain pour chaque artisan selon l'historique de ses chantiers. |
+| **Litige** | Procédure déclenchée en cas de désaccord. Un arbitre tiers résout le différend et décide de la répartition des fonds. |
+| **USDC** | Stablecoin dollar (Circle) utilisé comme unique monnaie de paiement sur le protocole. |
+
+---
+
+## Architecture du Protocole
+
+Le projet illustre les concepts avancés du Web3 :
+
+- **Architecture modulaire** — séparation entre le coffre (`EscrowVault`) et les composants optionnels (`YieldProvider`, `TrustScoreRegistry`, `ChantierNFT`) pour une évolutivité sans migration de fonds.
+- **Standards ERC** — ERC-20 (USDC), ERC-721 Soulbound (NFT chantier), ERC-4626 (intégration Aave V3).
+- **Gestion des rôles** — séparation des permissions entre Artisan, Particulier, Arbitre et Owner (multisig) via un système de contrôle d'accès on-chain.
+- **Traçabilité on-chain** — chaque action émet un événement indexable pour alimenter le frontend en temps réel.
+
+<img src="./doc/image.png" width="700" />
+---
+
+## Structure du Monorepo
+
+Le projet est divisé en deux entités distinctes :
 
 ```
 surepay/
-├── .devcontainer/          # Config environnement de développement
-├── backend/                # Smart contracts + tests (Hardhat TypeScript)
+├── backend/                  # Smart contracts Solidity + tests Hardhat
 │   ├── contracts/
-│   │   ├── core/           # EscrowVault, AccessControl
-│   │   ├── nft/            # ChantierNFT (ERC-5192 soulbound)
-│   │   ├── defi/           # YieldVault, LendingManager + interfaces
-│   │   ├── dispute/        # DisputeResolver (3 niveaux)
-│   │   └── mocks/          # MockUSDC, MockMorpho pour les tests
-│   ├── test/
-│   │   ├── unit/           # Tests unitaires par contrat
-│   │   └── integration/    # Tests fork Arbitrum mainnet
-│   ├── ignition/modules/   # Scripts de déploiement Hardhat Ignition
-│   ├── scripts/            # Tâches utilitaires
-│   └── docs/               # Notes d'architecture, audit checklist
-└── frontend/               # App Next.js (à venir)
+│   │   ├── yield/            # AaveV3YieldProvider
+│   │   ├── interfaces/       # IYieldProvider, IChantierNFT, ITrustScoreRegistry
+│   │   ├── libraries/        # Structs partagés (Chantier, Jalon…)
+│   │   └── mocks/            # Contrats de test (MockUSDC, MockAave…)
+│   ├── test/                 # Tests Hardhat
+│   └── ignition/             # Scripts de déploiement (local + Arbitrum Sepolia)
+│
+├── frontend/                 # DApp Web3 Next.js
+│   └── src/
+│       ├── app/              # Pages (App Router)
+│       ├── components/       # Composants UI (chantier/, owner/, shared/)
+│       ├── hooks/            # Logique blockchain (wagmi/viem)
+│       ├── lib/              # ABIs et adresses des contrats
+│       └── types/            # Types TypeScript des entités on-chain
+│
+└── doc/                      # Documentation de référence
 ```
 
 ---
 
-## Smart contracts
+## Smart Contracts
 
-| Contrat | Rôle | Phase |
-|---|---|---|
-| `SurepayAccessControl` | KYC whitelist + rôles (CLIENT, ARTISAN, MEDIATOR, ARBITRATOR, BACKEND, ADMIN) | 1 |
-| `EscrowVault` | Dépôt USDC, jalons, validation, libération, protocol fee 2% | 1 |
-| `ChantierNFT` | ERC-5192 soulbound — dossier probatoire du chantier | 1 |
-| `DisputeResolver` | Litiges 3 niveaux : amiable (15j) → médiation (30j) → arbitrage (21j) | 1 |
-| `YieldVault` | Opt-in client — déploiement USDC sur Morpho ERC-4626, crédits travaux | 2 |
-| `LendingManager` | CDP artisan — collatéral escrow → emprunt USDC matériaux via Morpho | 2 |
-
----
-
-## Architecture des flux (cas nominal)
-
-```
-Client (USDC)                                    Artisan
-     │                                               │
-     │ depositFunds(chantierId)                       │ depositCaution(chantierId)
-     ▼                                               ▼
-┌─────────────────── EscrowVault ──────────────────────┐
-│  Fonds ségrégués par chantier (USDC)                 │
-│  Jalons : EN_ATTENTE → PREUVE_SOUMISE → PAYE         │
-│       ↓ opt-in client                                │
-│  YieldVault → Morpho (shares ERC-4626)               │
-│       ↓ collatéral artisan                           │
-│  LendingManager → emprunt USDC → fournisseurs        │
-└──────────────────────────────────────────────────────┘
-     │ validateMilestone()                             │
-     ▼                                               ▼
-  release USDC artisan (- 2% fee)            remboursement emprunt auto
-     │
-  ChantierNFT mis à jour (soulbound)
-```
-
----
-
-## Démarrage rapide
-
-```bash
-cd backend
-npm install
-cp .env.example .env   # renseigner les clés
-npx hardhat compile
-npx hardhat test
-```
-
----
-
-## Prérequis réglementaires (avant mainnet)
-
-- Partenaire PSP / EP agréé ACPR contractualisé
-- Prestataire KYC / AML certifié
-- Mémo juridique PSFP + MiCA + LCB-FT signé
-- Partenaire CASP agréé MiCA (deadline AMF : 1er juillet 2026)
-- Audit smart contracts externe (Certora / Consensys Diligence)
+| Contrat | Rôle |
+|---|---|
+| `EscrowVault.sol` | Point d'entrée unique — séquestre USDC, jalons, litiges, frais 2% |
+| `ChantierNFT.sol` | ERC-721 Soulbound — dossier probatoire non-transférable par chantier |
+| `TrustScoreRegistry.sol` | Score de réputation artisan (0–100), 4 tiers, gel en litige |
+| `AaveV3YieldProvider.sol` | Yield opt-in — dépôt des fonds séquestrés dans Aave V3 |
 
 ---
 
 ## Stack technique
 
-- Solidity `^0.8.24`
-- Hardhat + TypeScript
-- OpenZeppelin Contracts v5
-- Morpho Protocol (ERC-4626 vaults)
-- Arbitrum One (L2 EVM cible)
-- Gnosis Safe multisig 3/5 (admin / kill-switch)
-- Pinata (IPFS — preuves chantier + métadonnées NFT)
+**Backend**
+- Solidity `0.8.28` — Hardhat v3 — OpenZeppelin Contracts v5.6.1
+- Aave V3 Protocol (ERC-4626 yield)
+- Hardhat Ignition (déploiement reproductible)
+- Arbitrum Sepolia (testnet) / Hardhat (local)
+
+**Frontend**
+- Next.js 16 App Router — TypeScript — Tailwind CSS v4
+- wagmi v3 + viem v2 + Reown AppKit (connexion wallet)
+- TanStack React Query v5 — shadcn/ui
 
 ---
 
-*Document de travail confidentiel — ne pas diffuser sans autorisation.*
+## Liens utiles
+
+- [Règles métier complètes](doc/business-rules.md)
+- [Architecture détaillée](doc/architecture.md)
+- [Référence ABI contrats](doc/contract-abi.md)
+- [Guide backend](backend/README.md)
+- [Guide frontend](frontend/README.md)
+
+---
+
+> Avertissement : projet à but académique et expérimental. Les smart contracts n'ont pas été audités par des professionnels.

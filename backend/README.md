@@ -213,7 +213,6 @@ npx hardhat ignition deploy ignition/modules/TrustBTP.ts --network arbitrumSepol
 
 ## TODO
 
-- [ ] EIP-2612 `permit` — `acceptDevisWithPermit()` pour approuver + déposer en 1 transaction
 - [ ] Paramétrage des pénalités (actuellement codées en dur)
 - [ ] Multi-token (EURC, DAI...)
 - [ ] 2ème provider de yield (Morpho)

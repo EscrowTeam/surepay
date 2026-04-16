@@ -14,7 +14,7 @@ Paiements par jalons, yield DeFi (Aave V3), réputation on-chain, NFT soulbound.
 | **Tailwind CSS** | v4 | Styles utilitaires |
 | **shadcn/ui** | — | Composants UI (Button, Card, Input, Badge...) |
 | **wagmi** | v3 | Hooks React pour interactions blockchain |
-| **viem** | v2 | Client Ethereum bas niveau (lecture, ABI, utils) |
+| **viem** | v2 | Client Ethereum bas niveau (lecture, ABI, utils, logs) |
 | **Reown AppKit** | v1 | Modal de connexion wallet (MetaMask, WalletConnect...) |
 | **TanStack React Query** | v5 | Cache et synchronisation des données on-chain |
 | **lucide-react** | — | Icônes |
