@@ -2,7 +2,7 @@
 
 ![Tests Solidity](https://github.com/EscrowTeam/surepay/actions/workflows/contracts.yml/badge.svg?branch=main)
 ![Build Frontend](https://github.com/EscrowTeam/surepay/actions/workflows/frontend.yml/badge.svg?branch=main)
-[![License MIT](https://img.shields.io/badge/license-MIT-blue)]((https://opensource.org/license/MIT))
+[![License MIT](https://img.shields.io/badge/license-MIT-blue)](https://opensource.org/license/MIT)
 [![Réseau](https://img.shields.io/badge/réseau-Arbitrum%20Sepolia-orange)](https://sepolia.arbiscan.io)
 [![Contexte](https://img.shields.io/badge/contexte-Projet%20Certification%20Web3-purple)]()
 
