@@ -14,7 +14,7 @@ Ce projet a été développé dans le cadre d'une certification Web3.
 
 Trust BTP est une plateforme Web3 qui sécurise les paiements de travaux via un escrow smart contract à jalons, génère du yield DeFi sur les fonds en attente, et construit la réputation on-chain de chaque artisan via un Trust Score automatique.
 
-> Note : cette version (Beta/Testnet) est restreinte à Arbitrum Sepolia. L'architecture est conçue pour évoluer vers d'autres protocoles DeFi sur Mainnet.
+> Note : cette version (Beta/Testnet) est restreinte à Arbitrum Sepolia. L'architecture est conçue pour évoluer vers d'autres protocoles DeFi.
 
 ---
 
