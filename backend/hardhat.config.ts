@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [hardhatToolboxMochaEthersPlugin, hardhatVerify, hardhatKeystore],
   verify: {
     etherscan: {      
-      apiKey: configVariable("HPGYJ5CFGWC6ZTRXV2VZ4GEK47A8ANV5U9")
+      apiKey: configVariable("ETHERSCAN_API_KEY")
     },
   },
   solidity: {
