@@ -3,7 +3,7 @@
 import { wagmiAdapter, projectId } from '@/config'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createAppKit } from '@reown/appkit/react'
-import { arbitrumSepolia } from '@reown/appkit/networks'
+import { hardhat, arbitrumSepolia } from '@reown/appkit/networks'
 import React, { type ReactNode } from 'react'
 import { cookieToInitialState, WagmiProvider, type Config } from 'wagmi'
 
@@ -23,8 +23,8 @@ const metadata = {
 createAppKit({
   adapters: [wagmiAdapter],
   projectId,
-  networks: [arbitrumSepolia],
-  defaultNetwork: arbitrumSepolia,
+  networks: [hardhat, arbitrumSepolia],
+  defaultNetwork: hardhat,
   metadata,
   themeMode: 'dark',
   themeVariables: {

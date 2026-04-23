@@ -1,6 +1,6 @@
 import { cookieStorage, createStorage } from '@wagmi/core'
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi'
-import { arbitrumSepolia } from '@reown/appkit/networks'
+import { hardhat, arbitrumSepolia } from '@reown/appkit/networks'
 
 export const projectId = process.env.NEXT_PUBLIC_PROJECT_ID
 
@@ -8,7 +8,7 @@ if (!projectId) {
   throw new Error('Project ID is not defined — set NEXT_PUBLIC_PROJECT_ID in .env.local')
 }
 
-export const networks = [arbitrumSepolia]
+export const networks = [hardhat, arbitrumSepolia]
 
 export const wagmiAdapter = new WagmiAdapter({
   storage: createStorage({ storage: cookieStorage }),

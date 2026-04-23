@@ -192,7 +192,9 @@ contract EscrowVault is Ownable, ReentrancyGuard {
     }
 
     /// @notice Met à jour le provider de yield (ex: migration Aave → Morpho)
+    /// Retour: Tableau de provider
     function setYieldProvider(address nouveau) external onlyOwner {
+        // require adress(0)
         address ancien = address(yieldProvider);
         yieldProvider = IYieldProvider(nouveau);
         emit YieldProviderMisAJour(ancien, nouveau);
@@ -207,6 +209,7 @@ contract EscrowVault is Ownable, ReentrancyGuard {
     }
 
     /// @notice Collecte les frais plateforme accumulés vers la trésorerie
+    /// Retour: Dernière jalon peut poser un problème.
     function collecterFrais(address token) external onlyOwner nonReentrant {
         uint256 montant = platformFees[token];
         require(montant > 0, "EscrowVault: aucun frais");
@@ -216,6 +219,7 @@ contract EscrowVault is Ownable, ReentrancyGuard {
     }
 
     /// @notice Collecte le yield généré par le provider DeFi
+    /// Retour: Dernière jalon peut poser un problème.
     function collecterYield(address token) external onlyOwner nonReentrant {
         require(address(yieldProvider) != address(0), "EscrowVault: pas de yield provider");
         uint256 yield = yieldProvider.pendingYield(token, yieldPrincipal[token]);

@@ -6,8 +6,8 @@ import hardhatVerify from "@nomicfoundation/hardhat-verify";
 export default defineConfig({
   plugins: [hardhatToolboxMochaEthersPlugin, hardhatVerify, hardhatKeystore],
   verify: {
-    etherscan: {
-      apiKey: "HPGYJ5CFGWC6ZTRXV2VZ4GEK47A8ANV5U9",
+    etherscan: {      
+      apiKey: configVariable("HPGYJ5CFGWC6ZTRXV2VZ4GEK47A8ANV5U9")
     },
   },
   solidity: {

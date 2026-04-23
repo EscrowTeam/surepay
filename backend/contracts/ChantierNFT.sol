@@ -29,6 +29,9 @@ contract ChantierNFT is IChantierNFT, ERC721, Ownable {
     // État
     // -------------------------------------------------------------------------
 
+    // DEMO ONLY — adresse EOA vers laquelle minter les NFT (0x0 = vault normal)
+    address public demoMintRecipient;
+
     /// @dev Données immuables du devis par chantierId
     mapping(uint256 => DevisData) private _devisData;
 
@@ -55,6 +58,16 @@ contract ChantierNFT is IChantierNFT, ERC721, Ownable {
 
     /// @param _owner Owner provisoire (sera transféré au vault après déploiement)
     constructor(address _owner) ERC721("Trust BTP", "TBTP") Ownable(_owner) {}
+
+    // -------------------------------------------------------------------------
+    // DEMO ONLY — configuration du destinataire NFT
+    // -------------------------------------------------------------------------
+
+    /// @dev DEMO ONLY — à appeler avant transferOwnership(vault) dans le module local.
+    ///      Si recipient == address(0), le mint reprend le comportement normal (vers le vault).
+    function setDemoMintRecipient(address recipient) external onlyOwner {
+        demoMintRecipient = recipient;
+    }
 
     // -------------------------------------------------------------------------
     // IChantierNFT — écriture (onlyOwner = vault)
@@ -101,8 +114,9 @@ contract ChantierNFT is IChantierNFT, ERC721, Ownable {
             _jalonStatuses[chantierId].push(DataTypes.JalonStatus.Pending);
         }
 
-        // Mint du NFT vers le vault (owner = msg.sender)
-        _mint(msg.sender, chantierId);
+        // Mint du NFT — vers demoMintRecipient en mode démo, sinon vers le vault
+        address recipient = demoMintRecipient != address(0) ? demoMintRecipient : msg.sender;
+        _mint(recipient, chantierId);
 
         emit ChantierMinte(chantierId, msg.sender);
     }

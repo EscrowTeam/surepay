@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { parseAbiItem } from 'viem'
-import { publicClient } from '@/lib/client'
+import { publicClient, isTestnet } from '@/lib/client'
 import { ESCROW_VAULT_ADDRESS } from '@/lib/contracts'
 
 // Charge les IDs de chantiers liés à une adresse (en tant qu'artisan ou particulier)
@@ -22,9 +22,12 @@ export function useChantiersByAddress(address: `0x${string}` | undefined) {
     const load = async () => {
       setIsLoading(true)
       try {
-        // Arbitrum Sepolia ≈ 250ms/bloc → 10 000 blocs ≈ 42 min de fenêtre        
         const latestBlock = await publicClient.getBlockNumber()
-        const fromBlock = latestBlock > 10_000n ? latestBlock - 10_000n : 0n
+        // En local (hardhat), scan depuis le bloc 0 (chaîne éphémère).
+        // Sur testnet, fenêtre glissante de 10 000 blocs ≈ 42 min sur Arbitrum Sepolia.
+        const fromBlock = isTestnet
+          ? (latestBlock > 10_000n ? latestBlock - 10_000n : 0n)
+          : 0n
 
         const event = parseAbiItem(
           'event DevisSoumis(uint256 indexed chantierId, address indexed artisan, address indexed particulier, address token, uint256 devisAmount)'

@@ -23,6 +23,11 @@ import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 // 100 000 USDC (6 décimales)
 const MINT_AMOUNT = 100_000_000_000n;
 
+// DEMO ONLY — adresse EOA qui recevra les NFT soulbound (visible dans le wallet).
+// Remplacer par votre adresse MetaMask avant la soutenance.
+// Mettre à "" pour désactiver (NFT minté vers le vault comme en production).
+const DEMO_NFT_RECIPIENT = "0xbDA5747bFD65F08deb54cb465eB87D40e51B197E";
+
 const LocalTrustBTPModule = buildModule("LocalTrustBTP", (m) => {
   const deployer    = m.getAccount(0);
   const artisan     = m.getAccount(1);
@@ -52,6 +57,12 @@ const LocalTrustBTPModule = buildModule("LocalTrustBTP", (m) => {
 
   m.call(trustScoreRegistry, "setEscrowVault", [escrowVault], {
     id: "wireRegistry",
+  });
+
+  // DEMO ONLY — doit être appelé avant transferOwnership (deployer est encore owner).
+  // address(0) = comportement normal (vault). Mettre votre EOA dans DEMO_NFT_RECIPIENT.
+  m.call(chantierNFT, "setDemoMintRecipient", [DEMO_NFT_RECIPIENT], {
+    id: "setDemoNFTRecipient",
   });
 
   m.call(chantierNFT, "transferOwnership", [escrowVault], {
